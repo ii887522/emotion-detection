@@ -18,7 +18,7 @@ def main():
 
     # Setup ANN
     net = nl.net.newff(
-        [[0, 1]] * (TARGET_IMAGE_SIZE[0] * TARGET_IMAGE_SIZE[1]), [10, 8]
+        [[0, 1]] * (TARGET_IMAGE_SIZE[0] * TARGET_IMAGE_SIZE[1]), [10, 10, 10, 10, 8]
     )
 
     image_gen = ImageDataGenerator(
