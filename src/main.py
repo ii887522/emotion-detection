@@ -12,7 +12,7 @@ def main():
 
     # Load an image
     image = common.load_tk_image(
-        file_path="res/emotions-3/anger/Angry-1.jpg",
+        file_path="res/emotions-1/anger/2Q__ (1)_face.png",
         size=(96, 96),
         interpolation=cv2.INTER_AREA
     )
@@ -24,4 +24,4 @@ def main():
 
 
 if __name__ == "__main__":
-    m
+    main()
