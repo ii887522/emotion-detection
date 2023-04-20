@@ -1,13 +1,27 @@
 import tkinter as tk
+import common
+import cv2
+# from keras.preprocessing.image import ImageDataGenerator
 
 def main():
-    # How to resize all image datasets so that they are the same sizes ?
-
+    # Show a window for presentation
     window = tk.Tk()
     window.title("Emotion Detection")
-    window.geometry("720x720")
+    window.geometry("360x360")
     window.resizable(False, False)
+
+    # Load an image
+    image = common.load_tk_image(
+        file_path="res/emotions-3/anger/Angry-1.jpg",
+        size=(96, 96),
+        interpolation=cv2.INTER_AREA
+    )
+
+    # Show the image
+    tk.Label(window, image=image).pack()
+
     window.mainloop()
 
+
 if __name__ == "__main__":
-    main()
+    m
