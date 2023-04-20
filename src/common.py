@@ -11,7 +11,7 @@ def load_tk_image(file_path: str, size: Tuple[int, int], interpolation: int) -> 
     image = cv2.resize(image, size, interpolation=interpolation)
 
     # Blur the image to reduce noise in edge detection
-    image = cv2.GaussianBlur(image, (7, 7), sigmaX = 0, sigmaY = 0, borderType = cv2.BORDER_REPLICATE)
+    image = cv2.GaussianBlur(image, (7, 7), sigmaX=0, sigmaY=0, borderType=cv2.BORDER_REPLICATE)
 
     # TODO: Augment the image
 
