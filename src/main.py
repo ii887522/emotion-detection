@@ -2,11 +2,15 @@ import tkinter as tk
 import cv2
 from keras.preprocessing.image import ImageDataGenerator
 import numpy as np
-import neurolab as nl
+from keras.models import Sequential
+from keras.layers import Dense, Reshape
+from keras.regularizers import L2
+from keras.optimizers import Adam
 
 
 INPUT_DIR_PATH = "res/emotions"
 TARGET_IMAGE_SIZE = (48, 48)
+EMOTION_CLASS_COUNT = 8
 
 
 def main():
@@ -16,11 +20,32 @@ def main():
     window.geometry("360x360")
     window.resizable(False, False)
 
-    # Setup ANN
-    net = nl.net.newff(
-        [[0, 1]] * (TARGET_IMAGE_SIZE[0] * TARGET_IMAGE_SIZE[1]), [10, 10, 10, 10, 8]
+    # Build an artificial neural network
+    model = Sequential()
+    model.add(
+        Reshape(
+            (TARGET_IMAGE_SIZE[0] * TARGET_IMAGE_SIZE[1],),
+            input_shape=(TARGET_IMAGE_SIZE[0], TARGET_IMAGE_SIZE[1], 1)
+        )
     )
+    model.add(
+        Dense(
+            TARGET_IMAGE_SIZE[0] * TARGET_IMAGE_SIZE[1] + EMOTION_CLASS_COUNT,
+            "tanh",
+            kernel_regularizer=L2(0.001),
+        )
+    )
+    model.add(
+        Dense(
+            EMOTION_CLASS_COUNT,
+            "sigmoid",
+            kernel_regularizer=L2(0.001),
+        )
+    )
+    model.summary()
+    model.compile(Adam(0.01), "categorical_crossentropy", ["accuracy"], jit_compile=True)
 
+    # Prepare datasets
     image_gen = ImageDataGenerator(
         rescale=1. / 255,
         rotation_range=360,
@@ -34,25 +59,23 @@ def main():
             cv2.GaussianBlur(image, (3, 3), sigmaX=0, sigmaY=0, borderType=cv2.BORDER_REPLICATE), 2
         )
     )
-
-    # Train loop
-    for ((train_xs, train_ys), (test_xs, test_ys)) in zip(image_gen.flow_from_directory(
+    train_gen = image_gen.flow_from_directory(
         directory=INPUT_DIR_PATH,
         target_size=TARGET_IMAGE_SIZE,
         color_mode="grayscale",
         class_mode="categorical",
         subset="training"
-    ), image_gen.flow_from_directory(
+    )
+    valid_gen = image_gen.flow_from_directory(
         directory=INPUT_DIR_PATH,
         target_size=TARGET_IMAGE_SIZE,
         color_mode="grayscale",
         class_mode="categorical",
         subset="validation"
-    )):
-       train_xs = np.reshape(train_xs, (train_xs.shape[0], train_xs.shape[1] * train_xs.shape[2]))
-       test_xs = np.reshape(test_xs, (test_xs.shape[0], test_xs.shape[1] * test_xs.shape[2]))
-       error = net.train(train_xs, train_ys, epochs=1, show=1)
-       print(error)
+    )
+
+    # Train the network
+    model.fit(train_gen, epochs=50, validation_data=valid_gen, steps_per_epoch=2310, validation_steps=989)
 
     window.mainloop()
 
