@@ -1,21 +1,16 @@
 import cv2
-from PIL import Image, ImageTk
-from typing import Tuple
+import os
+import numpy as np
 
 
-def load_tk_image(file_path: str, size: Tuple[int, int], interpolation: int) -> ImageTk.PhotoImage:
-    # Load an image
-    image = cv2.imread(file_path)
-
-    # Resize the image
-    image = cv2.resize(image, size, interpolation=interpolation)
-
-    # Blur the image to reduce noise in edge detection
-    image = cv2.GaussianBlur(image, (7, 7), sigmaX=0, sigmaY=0, borderType=cv2.BORDER_REPLICATE)
-
-    # TODO: Augment the image
-
-    # Convert the image to be presentable in a Tkinter window
-    image = Image.fromarray(image)
-
-    return ImageTk.PhotoImage(image)
+def load_grayscale_images(dir_path: str) -> np.ndarray: # (N, 48, 48, 1)
+    return np.expand_dims(
+        np.subtract(
+            np.multiply(
+                np.array([cv2.cvtColor(cv2.imread(f"{dir_path}/{image_path}"), cv2.COLOR_BGR2GRAY) for image_path in os.listdir(dir_path)]),
+                2. / 255
+            ),
+            1
+        ),
+        3
+    )
