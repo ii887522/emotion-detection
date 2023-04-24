@@ -1,0 +1,3 @@
+This message will be only logged once.
+113/113 [==============================] - 24s 28ms/step - loss: 0.7704 - accuracy: 0.7632
+{'loss': 0.7704224586486816, 'accuracy': 0.7631652355194092}
