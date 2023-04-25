@@ -334,7 +334,7 @@ def make_cnn(input_shape: tuple, output_shape: tuple) -> Sequential:
     model.add(Flatten())
     model.add(
         Dense(
-            units=256,
+            units=256, # Control the size of the convolution layer
             kernel_initializer="he_normal",
             kernel_constraint=MinMaxNorm(min_value=0.0625, max_value=4),
         )
@@ -346,7 +346,7 @@ def make_cnn(input_shape: tuple, output_shape: tuple) -> Sequential:
     # Block-5
     model.add(
         Dense(
-            units=128,
+            units=128, # Control the size of the convolution layer
             kernel_initializer="he_normal",
             kernel_constraint=MinMaxNorm(min_value=0.0625, max_value=4),
         )
