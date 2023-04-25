@@ -3,7 +3,6 @@ from keras.models import Sequential
 from keras.layers import Conv2D, BatchNormalization, MaxPooling2D, Dropout, Flatten, Dense, Activation, SpatialDropout2D
 from keras.constraints import MinMaxNorm
 from keras.callbacks import ModelCheckpoint, ReduceLROnPlateau, BackupAndRestore
-from keras.optimizers import Adam
 import sklearn.utils as sklearn_utils
 import sklearn.metrics as sklearn_metrics
 import csv
@@ -12,6 +11,7 @@ import matplotlib.pyplot as plt
 import seaborn as sn
 import pandas as pd
 import os
+import cv2
 
 
 # File paths
@@ -207,7 +207,10 @@ def load_dataset_pixels() -> dict:
             [_, pixels, usage] = row
             pixels = np.asarray(pixels.split(" "), np.uint8).reshape(48, 48, 1)
 
-            # Normalize pixels
+            # Equalize the image to make it clearer
+            pixels = cv2.equalizeHist(pixels)
+
+            # Normalize the pixels
             pixels = pixels / 255.0
 
             if input.get(usage) and input[usage].get("x"):
