@@ -1,23 +1,38 @@
 import numpy as np
-from keras import models
 from keras.models import Sequential
-from keras.layers import Conv2D, BatchNormalization, MaxPooling2D, Dropout, Flatten, Dense
+from keras.layers import Conv2D, BatchNormalization, MaxPooling2D, Dropout, Flatten, Dense, Activation, SpatialDropout2D
 from keras.constraints import MinMaxNorm
-from keras.callbacks import ModelCheckpoint, ReduceLROnPlateau
+from keras.callbacks import ModelCheckpoint, ReduceLROnPlateau, BackupAndRestore
+from keras.optimizers import Adam
 import sklearn.utils as sklearn_utils
 import sklearn.metrics as sklearn_metrics
-import os
 import csv
 from itertools import islice
 import matplotlib.pyplot as plt
 import seaborn as sn
 import pandas as pd
+import os
 
 
+# File paths
 EMOTION_DIR_PATH = "res/emotions"
-BEST_CHECKPOINT_FILE_PATH = "build/best.h5"
-LAST_CHECKPOINT_FILE_PATH = "build/last.h5"
+BEST_CHECKPOINT_FILE_PATH = "build/best_model"
 BEST_VALIDATION_ACCURACY_FILE_PATH = "build/best_val_acc.txt"
+BACKUP_DIR_PATH = "tmp/backup"
+REPORT_DIR_PATH = "reports"
+
+LABELS = [
+    "Neutral",
+    "Happiness",
+    "Surprise",
+    "Sadness",
+    "Anger",
+    "Disgust",
+    "Fear",
+    "Contempt",
+    "Unknown",
+    "NF"
+]
 
 
 def main():
@@ -40,16 +55,8 @@ def main():
     print("x_test: ", x_test.shape)
     print("y_test: ", y_test.shape)
 
-    model: Sequential
-
-    # Can we start from checkpoint ?
-    if os.path.isfile(LAST_CHECKPOINT_FILE_PATH):
-        # Resume from the last checkpoint
-        model = models.load_model(LAST_CHECKPOINT_FILE_PATH)
-
-    else:
-        # Build a CNN
-        model = make_cnn(input_shape=x_train.shape[1:], output_shape=(10,))
+    # Build a CNN
+    model = make_cnn(input_shape=x_train.shape[1:], output_shape=(len(LABELS),))
 
     # Load the best validation accuracy
     try:
@@ -68,13 +75,29 @@ def main():
     history = model.fit(
         x=x_train,
         y=y_train,
+        batch_size=16,
         epochs=50,
         verbose=1,
         validation_data=(x_val, y_val),
-        class_weight=dict(enumerate(sklearn_utils.compute_class_weight(class_weight="balanced", classes=np.unique(y_train), y=y_train), 0)),
+        class_weight=dict(
+            enumerate(
+                sklearn_utils.compute_class_weight(
+                    class_weight="balanced",
+                    classes=np.unique(y_train),
+                    y=y_train
+                ),
+                0
+            )
+        ),
         callbacks=[
-            ModelCheckpoint(filepath=BEST_CHECKPOINT_FILE_PATH, monitor="val_accuracy", verbose=1, save_best_only=True, initial_value_threshold=best_val_acc),
-            ModelCheckpoint(filepath=LAST_CHECKPOINT_FILE_PATH, monitor="val_accuracy", verbose=1),
+            ModelCheckpoint(
+                filepath=BEST_CHECKPOINT_FILE_PATH,
+                monitor="val_accuracy",
+                verbose=1,
+                save_best_only=True,
+                initial_value_threshold=best_val_acc
+            ),
+            BackupAndRestore(backup_dir=BACKUP_DIR_PATH),
             ReduceLROnPlateau(factor=1.0 / 3.0, verbose=1)
         ]
     )
@@ -85,38 +108,44 @@ def main():
     with open(BEST_VALIDATION_ACCURACY_FILE_PATH, "w") as best_val_acc_file:
         best_val_acc_file.write(str(max(max(history.history['val_accuracy']), best_val_acc)))
 
-    # Summarize history for accuracy
+    # Generate reports
+    # Assume .gitkeep file always exist inside the reports folder
+    current_run = len(os.listdir(REPORT_DIR_PATH))
+
+    # Summarize history for accuracy and save the result
     plt.plot(history.history['accuracy'])
     plt.plot(history.history['val_accuracy'])
-    plt.title('model accuracy')
+    plt.title('Model Accuracy')
     plt.ylabel('accuracy')
     plt.xlabel('epoch')
-    plt.legend(['train', 'test'], loc='upper left')
-    plt.show()
+    plt.legend(['Train', 'Test'], loc='upper left')
+    plt.savefig(f"{REPORT_DIR_PATH}/{current_run}/model-acc.png")
 
-    # Summarize history for loss
+    # Summarize history for loss and save the result
     plt.plot(history.history['loss'])
     plt.plot(history.history['val_loss'])
-    plt.title('model loss')
+    plt.title('Model Loss')
     plt.ylabel('loss')
     plt.xlabel('epoch')
-    plt.legend(['train', 'test'], loc='upper left')
-    plt.show()
+    plt.legend(['Train', 'Test'], loc='upper left')
+    plt.savefig(f"{REPORT_DIR_PATH}/{current_run}/model-loss.png")
 
     # Evaluate the CNN
     metrics = model.evaluate(x=x_test, y=y_test, verbose=1, return_dict=True)
-    print(metrics)
+
+    # Save the CNN evaluation result
+    with open("{REPORT_DIR_PATH}/{current_run}/metrics.txt", "w") as metrics_file:
+        metrics_file.write(str(metrics))
 
     # Predict from the CNN
     y_pred = model.predict(x=x_test, verbose=1)
     y_pred = np.argmax(y_pred, axis=1)
 
-    # Plot a confusion matrix
+    # Plot a confusion matrix and save the result
     result = sklearn_metrics.confusion_matrix(y_test, y_pred, normalize="pred")
-    labels = ["Neutral", "Happiness", "Surprise", "Sadness", "Anger", "Disgust", "Fear", "Contempt", "Unknown", "NF"]
-    df_cm = pd.DataFrame(result, index=labels, columns=labels)
+    df_cm = pd.DataFrame(result, index=LABELS, columns=LABELS)
     sn.heatmap(df_cm, annot=True)
-    plt.show()
+    plt.savefig(f"{REPORT_DIR_PATH}/{current_run}/confusion-matrix.png")
 
 
 """
@@ -259,99 +288,71 @@ def make_cnn(input_shape: tuple, output_shape: tuple) -> Sequential:
     # Block-1
     model.add(
         Conv2D(
-            filters=64,
+            filters=32, # Control the size of the convolution layer
             kernel_size=3,
-            activation="elu",
             kernel_initializer="he_normal",
-            kernel_constraint=MinMaxNorm(min_value=0.0625, max_value=4, axis=[0, 1, 2, 3]),
+            kernel_constraint=MinMaxNorm(min_value=0.0625, max_value=4),
             input_shape=input_shape
         )
     )
     model.add(BatchNormalization())
-    model.add(
-        Conv2D(
-            filters=64,
-            kernel_size=3,
-            activation="elu",
-            kernel_initializer="he_normal",
-            kernel_constraint=MinMaxNorm(min_value=0.0625, max_value=4, axis=[0, 1, 2, 3]),
-        )
-    )
-    model.add(BatchNormalization())
+    model.add(Activation("elu"))
     model.add(MaxPooling2D())
-    model.add(Dropout(0.5))
+    model.add(SpatialDropout2D(0.5))
 
     # Block-2
     model.add(
         Conv2D(
-            filters=128,
+            filters=64, # Control the size of the convolution layer
             kernel_size=3,
-            activation="elu",
             kernel_initializer="he_normal",
-            kernel_constraint=MinMaxNorm(min_value=0.0625, max_value=4, axis=[0, 1, 2, 3]),
+            kernel_constraint=MinMaxNorm(min_value=0.0625, max_value=4),
+            input_shape=input_shape
         )
     )
     model.add(BatchNormalization())
-    model.add(
-        Conv2D(
-            filters=128,
-            kernel_size=3,
-            activation="elu",
-            kernel_initializer="he_normal",
-            kernel_constraint=MinMaxNorm(min_value=0.0625, max_value=4, axis=[0, 1, 2, 3]),
-        )
-    )
-    model.add(BatchNormalization())
+    model.add(Activation("elu"))
     model.add(MaxPooling2D())
-    model.add(Dropout(0.5))
+    model.add(SpatialDropout2D(0.5))
 
     # Block-3
     model.add(
         Conv2D(
-            filters=256,
+            filters=128, # Control the size of the convolution layer
             kernel_size=3,
-            activation="elu",
             kernel_initializer="he_normal",
-            kernel_constraint=MinMaxNorm(min_value=0.0625, max_value=4, axis=[0, 1, 2, 3]),
+            kernel_constraint=MinMaxNorm(min_value=0.0625, max_value=4),
+            input_shape=input_shape
         )
     )
     model.add(BatchNormalization())
-    model.add(
-        Conv2D(
-            filters=256,
-            kernel_size=3,
-            activation="elu",
-            kernel_initializer="he_normal",
-            kernel_constraint=MinMaxNorm(min_value=0.0625, max_value=4, axis=[0, 1, 2, 3]),
-        )
-    )
-    model.add(BatchNormalization())
+    model.add(Activation("elu"))
     model.add(MaxPooling2D())
-    model.add(Dropout(0.5))
+    model.add(SpatialDropout2D(0.5))
 
     # Block-4
     model.add(Flatten())
     model.add(
         Dense(
             units=256,
-            activation="elu",
             kernel_initializer="he_normal",
-            kernel_constraint=MinMaxNorm(min_value=0.0625, max_value=4, axis=[0, 1]),
+            kernel_constraint=MinMaxNorm(min_value=0.0625, max_value=4),
         )
     )
     model.add(BatchNormalization())
+    model.add(Activation("elu"))
     model.add(Dropout(0.5))
 
     # Block-5
     model.add(
         Dense(
             units=128,
-            activation="elu",
             kernel_initializer="he_normal",
-            kernel_constraint=MinMaxNorm(min_value=0.0625, max_value=4, axis=[0, 1]),
+            kernel_constraint=MinMaxNorm(min_value=0.0625, max_value=4),
         )
     )
     model.add(BatchNormalization())
+    model.add(Activation("elu"))
     model.add(Dropout(0.5))
 
     # Block-6
