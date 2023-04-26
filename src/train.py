@@ -142,7 +142,7 @@ def make_cnn(input_shape: tuple, output_shape: tuple) -> Sequential:
     # Block-1
     model.add(
         Conv2D(
-            filters=32, # Control the size of the convolution layer
+            filters=64, # Control the size of the convolution layer
             kernel_size=3,
             kernel_initializer="he_normal",
             kernel_constraint=MinMaxNorm(min_value=0.0625, max_value=4),
@@ -153,7 +153,7 @@ def make_cnn(input_shape: tuple, output_shape: tuple) -> Sequential:
     model.add(Activation("elu"))
     model.add(
         Conv2D(
-            filters=32, # Control the size of the convolution layer
+            filters=64, # Control the size of the convolution layer
             kernel_size=3,
             kernel_initializer="he_normal",
             kernel_constraint=MinMaxNorm(min_value=0.0625, max_value=4),
@@ -167,7 +167,7 @@ def make_cnn(input_shape: tuple, output_shape: tuple) -> Sequential:
     # Block-2
     model.add(
         Conv2D(
-            filters=64, # Control the size of the convolution layer
+            filters=128, # Control the size of the convolution layer
             kernel_size=3,
             kernel_initializer="he_normal",
             kernel_constraint=MinMaxNorm(min_value=0.0625, max_value=4),
@@ -177,7 +177,7 @@ def make_cnn(input_shape: tuple, output_shape: tuple) -> Sequential:
     model.add(Activation("elu"))
     model.add(
         Conv2D(
-            filters=64, # Control the size of the convolution layer
+            filters=128, # Control the size of the convolution layer
             kernel_size=3,
             kernel_initializer="he_normal",
             kernel_constraint=MinMaxNorm(min_value=0.0625, max_value=4),
@@ -191,7 +191,7 @@ def make_cnn(input_shape: tuple, output_shape: tuple) -> Sequential:
     # Block-3
     model.add(
         Conv2D(
-            filters=128, # Control the size of the convolution layer
+            filters=256, # Control the size of the convolution layer
             kernel_size=3,
             kernel_initializer="he_normal",
             kernel_constraint=MinMaxNorm(min_value=0.0625, max_value=4),
@@ -201,7 +201,7 @@ def make_cnn(input_shape: tuple, output_shape: tuple) -> Sequential:
     model.add(Activation("elu"))
     model.add(
         Conv2D(
-            filters=128, # Control the size of the convolution layer
+            filters=256, # Control the size of the convolution layer
             kernel_size=3,
             kernel_initializer="he_normal",
             kernel_constraint=MinMaxNorm(min_value=0.0625, max_value=4),
@@ -216,19 +216,7 @@ def make_cnn(input_shape: tuple, output_shape: tuple) -> Sequential:
     model.add(Flatten())
     model.add(
         Dense(
-            units=1024, # Control the size of the convolution layer
-            kernel_initializer="he_normal",
-            kernel_constraint=MinMaxNorm(min_value=0.0625, max_value=4),
-        )
-    )
-    model.add(BatchNormalization())
-    model.add(Activation("elu"))
-    model.add(Dropout(0.5))
-
-    # Block-5
-    model.add(
-        Dense(
-            units=512, # Control the size of the convolution layer
+            units=128, # Control the size of the convolution layer
             kernel_initializer="he_normal",
             kernel_constraint=MinMaxNorm(min_value=0.0625, max_value=4),
         )
