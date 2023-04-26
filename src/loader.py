@@ -77,6 +77,9 @@ def load_dataset_pixels(usages: Set[str] = set(["Training", "PublicTest", "Priva
             # Equalize the image to make it clearer
             pixels = cv2.equalizeHist(pixels)
 
+            # Denoise the image to make it easier for model to learn
+            pixels = cv2.fastNlMeansDenoising(src=pixels, h=16, templateWindowSize=7, searchWindowSize=21)
+
             # Normalize the pixels
             pixels = pixels / 255.0
 
