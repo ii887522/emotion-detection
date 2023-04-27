@@ -13,7 +13,7 @@ import csv
 from itertools import islice
 
 
-TRAIN_EPOCH = 50
+TRAIN_EPOCH = 3
 
 
 def main():
@@ -104,7 +104,7 @@ def main():
     model.save(constants.LAST_MODEL_DIR_PATH)
 
     # Preparing training reports
-    print("Preparing training reports...")
+    print("Generating training reports...")
     os.mkdir(f"{constants.REPORT_DIR_PATH}/{to_epoch - TRAIN_EPOCH + 1}-{to_epoch}")
 
     with open(constants.TRAIN_LOG_FILE_PATH) as train_log_file:
@@ -114,25 +114,16 @@ def main():
         losses = []
         val_losses = []
 
-        for row in islice(csv.reader(train_log_file), 1, None):
+        for row in islice(csv.reader(train_log_file), to_epoch - TRAIN_EPOCH + 1, None):
             [epoch, acc, loss, _, val_acc, val_loss] = row
-            epoches.append(epoch)
-            accs.append(acc)
-            val_accs.append(val_acc)
-            losses.append(loss)
-            val_losses.append(val_loss)
-
-        # Summarize history for accuracy and save the result
-        plt.plot(epoches, accs)
-        plt.plot(epoches, val_accs)
-        plt.title('Model Accuracy')
-        plt.ylabel('accuracy')
-        plt.xlabel('epoch')
-        plt.legend(['Train', 'Test'], loc='upper left')
-        plt.savefig(f"{constants.REPORT_DIR_PATH}/{to_epoch - TRAIN_EPOCH + 1}-{to_epoch}/model-acc.png")
-        plt.close()
+            epoches.append(int(epoch) + 1)
+            accs.append(float(acc))
+            val_accs.append(float(val_acc))
+            losses.append(float(loss))
+            val_losses.append(float(val_loss))
 
         # Summarize history for loss and save the result
+        print("Generating model loss report...")
         plt.plot(epoches, losses)
         plt.plot(epoches, val_losses)
         plt.title('Model Loss')
@@ -140,6 +131,17 @@ def main():
         plt.xlabel('epoch')
         plt.legend(['Train', 'Test'], loc='upper left')
         plt.savefig(f"{constants.REPORT_DIR_PATH}/{to_epoch - TRAIN_EPOCH + 1}-{to_epoch}/model-loss.png")
+        plt.close()
+
+        # Summarize history for accuracy and save the result
+        print("Generating model accuracy report...")
+        plt.plot(epoches, accs)
+        plt.plot(epoches, val_accs)
+        plt.title('Model Accuracy')
+        plt.ylabel('accuracy')
+        plt.xlabel('epoch')
+        plt.legend(['Train', 'Test'], loc='upper left')
+        plt.savefig(f"{constants.REPORT_DIR_PATH}/{to_epoch - TRAIN_EPOCH + 1}-{to_epoch}/model-acc.png")
         plt.close()
 
 
