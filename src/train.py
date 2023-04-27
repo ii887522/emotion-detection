@@ -3,12 +3,14 @@ from keras import models
 from keras.models import Sequential
 from keras.layers import Conv2D, BatchNormalization, MaxPooling2D, Dropout, Flatten, Dense, Activation, SpatialDropout2D
 from keras.constraints import MinMaxNorm
-from keras.callbacks import ModelCheckpoint, ReduceLROnPlateau, BackupAndRestore
+from keras.callbacks import ModelCheckpoint, ReduceLROnPlateau, BackupAndRestore, CSVLogger
 import sklearn.utils as sklearn_utils
 import matplotlib.pyplot as plt
 import os
 import constants
 import loader
+import csv
+from itertools import islice
 
 
 TRAIN_EPOCH = 50
@@ -42,38 +44,35 @@ def main():
         print("No last model found. Building a CNN...")
         model = make_cnn(input_shape=x_train.shape[1:], output_shape=(len(constants.LABELS),))
 
-    # Load the best validation accuracy
+    best_val_acc = 0.0
+    last_epoch = -1
+
+    # Load the best validation accuracy and last epoch
     try:
         print("Loading the best validation accuracy...")
+        print("Loading the last epoch...")
 
-        with open(constants.BEST_VAL_ACC_FILE_PATH, "r") as best_val_acc_file:
-            best_val_acc = float(best_val_acc_file.read())
+        with open(constants.TRAIN_LOG_FILE_PATH) as train_log_file:
+            for row in islice(csv.reader(train_log_file), 1, None):
+                [epoch, _, _, _, val_acc, _] = row
+                best_val_acc = max(best_val_acc, float(val_acc))
+                last_epoch = int(epoch)
 
-        print("best_val_acc: ", best_val_acc)
-
-    except:
-        print("Failed to load the accuracy. Default best_val_acc to 0.0")
-        best_val_acc = 0.0
-
-    # Load the last model epoch
-    try:
-        print("Loading the last model epoch...")
-
-        with open(constants.LAST_MODEL_EPOCH_FILE_PATH, "r") as last_model_epoch_file:
-            last_epoch = int(last_model_epoch_file.read())
-
-        print("last_epoch: ", last_epoch)
+            print("best_val_acc", best_val_acc)
+            print("last_epoch", last_epoch)
 
     except:
-        print("Failed to load the last model epoch. Default last_epoch to 0")
-        last_epoch = 0
+        print("Failed to load the best validation accuracy. Default best_val_acc to 0.0")
+        print("Failed to load the last epoch. Default last_epoch to -1")
+
+    to_epoch = ((last_epoch + 1) // TRAIN_EPOCH + 1) * TRAIN_EPOCH
 
     # Train the CNN
-    history = model.fit(
+    model.fit(
         x=x_train,
         y=y_train,
         batch_size=16,
-        epochs=last_epoch + TRAIN_EPOCH,
+        epochs=to_epoch,
         validation_data=(x_val, y_val),
         class_weight=dict(
             enumerate(
@@ -85,7 +84,7 @@ def main():
                 0
             )
         ),
-        initial_epoch=last_epoch,
+        initial_epoch=last_epoch + 1,
         callbacks=[
             ModelCheckpoint(
                 filepath=constants.BEST_MODEL_DIR_PATH,
@@ -95,45 +94,53 @@ def main():
                 initial_value_threshold=best_val_acc
             ),
             BackupAndRestore(backup_dir=constants.BACKUP_DIR_PATH),
-            ReduceLROnPlateau(factor=1.0 / 3.0, verbose=1)
+            ReduceLROnPlateau(factor=1.0 / 3.0, verbose=1),
+            CSVLogger(filename=constants.TRAIN_LOG_FILE_PATH, append=True)
         ]
     )
 
-    # Save the last model epoch
-    print("Save the last model epoch...")
-    with open(constants.LAST_MODEL_EPOCH_FILE_PATH, "w") as last_model_epoch_file:
-        last_model_epoch_file.write(str(last_epoch + TRAIN_EPOCH))
-
-    # Save the best validation accuracy
-    print("Save the best validation accuracy...")
-    with open(constants.BEST_VAL_ACC_FILE_PATH, "w") as best_val_acc_file:
-        best_val_acc_file.write(str(max(max(history.history['val_accuracy']), best_val_acc)))
-
     # Save the last model
+    print("Saving the last model...")
     model.save(constants.LAST_MODEL_DIR_PATH)
 
     # Preparing training reports
-    os.mkdir(f"{constants.REPORT_DIR_PATH}/{last_epoch + 1}-{last_epoch + TRAIN_EPOCH}")
+    print("Preparing training reports...")
+    os.mkdir(f"{constants.REPORT_DIR_PATH}/{to_epoch - TRAIN_EPOCH + 1}-{to_epoch}")
 
-    # Summarize history for accuracy and save the result
-    plt.plot(history.history['accuracy'])
-    plt.plot(history.history['val_accuracy'])
-    plt.title('Model Accuracy')
-    plt.ylabel('accuracy')
-    plt.xlabel('epoch')
-    plt.legend(['Train', 'Test'], loc='upper left')
-    plt.savefig(f"{constants.REPORT_DIR_PATH}/{last_epoch + 1}-{last_epoch + TRAIN_EPOCH}/model-acc.png")
-    plt.close()
+    with open(constants.TRAIN_LOG_FILE_PATH) as train_log_file:
+        epoches = []
+        accs = []
+        val_accs = []
+        losses = []
+        val_losses = []
 
-    # Summarize history for loss and save the result
-    plt.plot(history.history['loss'])
-    plt.plot(history.history['val_loss'])
-    plt.title('Model Loss')
-    plt.ylabel('loss')
-    plt.xlabel('epoch')
-    plt.legend(['Train', 'Test'], loc='upper left')
-    plt.savefig(f"{constants.REPORT_DIR_PATH}/{last_epoch + 1}-{last_epoch + TRAIN_EPOCH}/model-loss.png")
-    plt.close()
+        for row in islice(csv.reader(train_log_file), 1, None):
+            [epoch, acc, loss, _, val_acc, val_loss] = row
+            epoches.append(epoch)
+            accs.append(acc)
+            val_accs.append(val_acc)
+            losses.append(loss)
+            val_losses.append(val_loss)
+
+        # Summarize history for accuracy and save the result
+        plt.plot(epoches, accs)
+        plt.plot(epoches, val_accs)
+        plt.title('Model Accuracy')
+        plt.ylabel('accuracy')
+        plt.xlabel('epoch')
+        plt.legend(['Train', 'Test'], loc='upper left')
+        plt.savefig(f"{constants.REPORT_DIR_PATH}/{to_epoch - TRAIN_EPOCH + 1}-{to_epoch}/model-acc.png")
+        plt.close()
+
+        # Summarize history for loss and save the result
+        plt.plot(epoches, losses)
+        plt.plot(epoches, val_losses)
+        plt.title('Model Loss')
+        plt.ylabel('loss')
+        plt.xlabel('epoch')
+        plt.legend(['Train', 'Test'], loc='upper left')
+        plt.savefig(f"{constants.REPORT_DIR_PATH}/{to_epoch - TRAIN_EPOCH + 1}-{to_epoch}/model-loss.png")
+        plt.close()
 
 
 def make_cnn(input_shape: tuple, output_shape: tuple) -> Sequential:
@@ -162,7 +169,7 @@ def make_cnn(input_shape: tuple, output_shape: tuple) -> Sequential:
     model.add(BatchNormalization())
     model.add(Activation("elu"))
     model.add(MaxPooling2D())
-    model.add(SpatialDropout2D(0.25))
+    model.add(SpatialDropout2D(0.5))
 
     # Block-2
     model.add(
@@ -186,7 +193,7 @@ def make_cnn(input_shape: tuple, output_shape: tuple) -> Sequential:
     model.add(BatchNormalization())
     model.add(Activation("elu"))
     model.add(MaxPooling2D())
-    model.add(SpatialDropout2D(0.25))
+    model.add(SpatialDropout2D(0.5))
 
     # Block-3
     model.add(
@@ -210,7 +217,7 @@ def make_cnn(input_shape: tuple, output_shape: tuple) -> Sequential:
     model.add(BatchNormalization())
     model.add(Activation("elu"))
     model.add(MaxPooling2D())
-    model.add(SpatialDropout2D(0.25))
+    model.add(SpatialDropout2D(0.5))
 
     # Block-4
     model.add(Flatten())
@@ -225,7 +232,7 @@ def make_cnn(input_shape: tuple, output_shape: tuple) -> Sequential:
     model.add(Activation("elu"))
     model.add(Dropout(0.5))
 
-    # Block-6
+    # Block-5
     model.add(
         Dense(
             units=output_shape[0],
