@@ -13,7 +13,7 @@ import csv
 from itertools import islice
 
 
-TRAIN_EPOCH = 3
+TRAIN_EPOCH = 50
 
 
 def main():
