@@ -154,7 +154,7 @@ def make_cnn(input_shape: tuple, output_shape: tuple) -> Sequential:
             filters=64, # Control the size of the convolution layer
             kernel_size=3,
             kernel_initializer="he_normal",
-            kernel_constraint=MinMaxNorm(min_value=0.0625, max_value=4),
+            kernel_constraint=MinMaxNorm(min_value=0.0625, max_value=4, axis=[0, 1, 2, 3]),
             input_shape=input_shape
         )
     )
@@ -165,7 +165,7 @@ def make_cnn(input_shape: tuple, output_shape: tuple) -> Sequential:
             filters=64, # Control the size of the convolution layer
             kernel_size=3,
             kernel_initializer="he_normal",
-            kernel_constraint=MinMaxNorm(min_value=0.0625, max_value=4),
+            kernel_constraint=MinMaxNorm(min_value=0.0625, max_value=4, axis=[0, 1, 2, 3]),
         )
     )
     model.add(BatchNormalization())
@@ -179,7 +179,7 @@ def make_cnn(input_shape: tuple, output_shape: tuple) -> Sequential:
             filters=128, # Control the size of the convolution layer
             kernel_size=3,
             kernel_initializer="he_normal",
-            kernel_constraint=MinMaxNorm(min_value=0.0625, max_value=4),
+            kernel_constraint=MinMaxNorm(min_value=0.0625, max_value=4, axis=[0, 1, 2, 3]),
         )
     )
     model.add(BatchNormalization())
@@ -189,7 +189,7 @@ def make_cnn(input_shape: tuple, output_shape: tuple) -> Sequential:
             filters=128, # Control the size of the convolution layer
             kernel_size=3,
             kernel_initializer="he_normal",
-            kernel_constraint=MinMaxNorm(min_value=0.0625, max_value=4),
+            kernel_constraint=MinMaxNorm(min_value=0.0625, max_value=4, axis=[0, 1, 2, 3]),
         )
     )
     model.add(BatchNormalization())
@@ -203,7 +203,7 @@ def make_cnn(input_shape: tuple, output_shape: tuple) -> Sequential:
             filters=256, # Control the size of the convolution layer
             kernel_size=3,
             kernel_initializer="he_normal",
-            kernel_constraint=MinMaxNorm(min_value=0.0625, max_value=4),
+            kernel_constraint=MinMaxNorm(min_value=0.0625, max_value=4, axis=[0, 1, 2, 3]),
         )
     )
     model.add(BatchNormalization())
@@ -213,7 +213,7 @@ def make_cnn(input_shape: tuple, output_shape: tuple) -> Sequential:
             filters=256, # Control the size of the convolution layer
             kernel_size=3,
             kernel_initializer="he_normal",
-            kernel_constraint=MinMaxNorm(min_value=0.0625, max_value=4),
+            kernel_constraint=MinMaxNorm(min_value=0.0625, max_value=4, axis=[0, 1, 2, 3]),
         )
     )
     model.add(BatchNormalization())
@@ -227,7 +227,7 @@ def make_cnn(input_shape: tuple, output_shape: tuple) -> Sequential:
         Dense(
             units=128, # Control the size of the convolution layer
             kernel_initializer="he_normal",
-            kernel_constraint=MinMaxNorm(min_value=0.0625, max_value=4),
+            kernel_constraint=MinMaxNorm(min_value=0.0625, max_value=4, axis=[0, 1]),
         )
     )
     model.add(BatchNormalization())
@@ -239,7 +239,7 @@ def make_cnn(input_shape: tuple, output_shape: tuple) -> Sequential:
         Dense(
             units=128, # Control the size of the convolution layer
             kernel_initializer="he_normal",
-            kernel_constraint=MinMaxNorm(min_value=0.0625, max_value=4),
+            kernel_constraint=MinMaxNorm(min_value=0.0625, max_value=4, axis=[0, 1]),
         )
     )
     model.add(BatchNormalization())
