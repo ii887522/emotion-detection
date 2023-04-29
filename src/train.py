@@ -1,9 +1,10 @@
 import numpy as np
 from keras import models
 from keras.models import Sequential
-from keras.layers import Conv2D, BatchNormalization, MaxPooling2D, Dropout, Flatten, Dense, Activation, SpatialDropout2D
+from keras.layers import Conv2D, BatchNormalization, MaxPooling2D, Dropout, Flatten, Dense, SpatialDropout2D
 from keras.constraints import MinMaxNorm
 from keras.callbacks import ModelCheckpoint, ReduceLROnPlateau, BackupAndRestore, CSVLogger
+from keras.optimizers import Adam
 import sklearn.utils as sklearn_utils
 import matplotlib.pyplot as plt
 import os
@@ -152,6 +153,7 @@ def make_cnn(input_shape: tuple, output_shape: tuple) -> Sequential:
     model.add(
         Conv2D(
             filters=64, # Control the size of the convolution layer
+            activation="elu",
             kernel_size=3,
             kernel_initializer="he_normal",
             kernel_constraint=MinMaxNorm(min_value=0.0625, max_value=4, axis=[0, 1, 2, 3]),
@@ -159,91 +161,90 @@ def make_cnn(input_shape: tuple, output_shape: tuple) -> Sequential:
         )
     )
     model.add(BatchNormalization())
-    model.add(Activation("elu"))
     model.add(
         Conv2D(
             filters=64, # Control the size of the convolution layer
+            activation="elu",
             kernel_size=3,
             kernel_initializer="he_normal",
             kernel_constraint=MinMaxNorm(min_value=0.0625, max_value=4, axis=[0, 1, 2, 3]),
         )
     )
     model.add(BatchNormalization())
-    model.add(Activation("elu"))
     model.add(MaxPooling2D())
-    model.add(SpatialDropout2D(0.5))
+    model.add(SpatialDropout2D(0.2))
 
     # Block-2
     model.add(
         Conv2D(
             filters=128, # Control the size of the convolution layer
+            activation="elu",
             kernel_size=3,
             kernel_initializer="he_normal",
             kernel_constraint=MinMaxNorm(min_value=0.0625, max_value=4, axis=[0, 1, 2, 3]),
         )
     )
     model.add(BatchNormalization())
-    model.add(Activation("elu"))
     model.add(
         Conv2D(
             filters=128, # Control the size of the convolution layer
+            activation="elu",
             kernel_size=3,
             kernel_initializer="he_normal",
             kernel_constraint=MinMaxNorm(min_value=0.0625, max_value=4, axis=[0, 1, 2, 3]),
         )
     )
     model.add(BatchNormalization())
-    model.add(Activation("elu"))
     model.add(MaxPooling2D())
-    model.add(SpatialDropout2D(0.5))
+    model.add(SpatialDropout2D(0.2))
 
     # Block-3
     model.add(
         Conv2D(
             filters=256, # Control the size of the convolution layer
+            activation="elu",
             kernel_size=3,
             kernel_initializer="he_normal",
             kernel_constraint=MinMaxNorm(min_value=0.0625, max_value=4, axis=[0, 1, 2, 3]),
         )
     )
     model.add(BatchNormalization())
-    model.add(Activation("elu"))
     model.add(
         Conv2D(
             filters=256, # Control the size of the convolution layer
+            activation="elu",
             kernel_size=3,
             kernel_initializer="he_normal",
             kernel_constraint=MinMaxNorm(min_value=0.0625, max_value=4, axis=[0, 1, 2, 3]),
         )
     )
     model.add(BatchNormalization())
-    model.add(Activation("elu"))
     model.add(MaxPooling2D())
-    model.add(SpatialDropout2D(0.5))
+    model.add(SpatialDropout2D(0.2))
 
     # Block-4
     model.add(Flatten())
     model.add(
         Dense(
-            units=128, # Control the size of the convolution layer
+            units=512, # Control the size of the convolution layer
+            activation="elu",
             kernel_initializer="he_normal",
             kernel_constraint=MinMaxNorm(min_value=0.0625, max_value=4, axis=[0, 1]),
         )
     )
     model.add(BatchNormalization())
-    model.add(Activation("elu"))
     model.add(Dropout(0.5))
 
     # Block-5
     model.add(
         Dense(
-            units=128, # Control the size of the convolution layer
+            units=256, # Control the size of the convolution layer
+            activation="elu",
             kernel_initializer="he_normal",
             kernel_constraint=MinMaxNorm(min_value=0.0625, max_value=4, axis=[0, 1]),
         )
     )
     model.add(BatchNormalization())
-    model.add(Activation("elu"))
     model.add(Dropout(0.5))
 
     # Block-6
@@ -255,7 +256,7 @@ def make_cnn(input_shape: tuple, output_shape: tuple) -> Sequential:
         )
     )
 
-    model.compile(optimizer="adam", loss="sparse_categorical_crossentropy", metrics=["accuracy"])
+    model.compile(optimizer=Adam(0.001 / 3), loss="sparse_categorical_crossentropy", metrics=["accuracy"])
     model.summary()
 
     return model
