@@ -1,7 +1,7 @@
 import numpy as np
 from keras import models
 from keras.models import Sequential
-from keras.layers import Conv2D, BatchNormalization, MaxPooling2D, Dropout, Flatten, Dense, SpatialDropout2D
+from keras.layers import Conv2D, BatchNormalization, MaxPooling2D, Dropout, Flatten, Dense
 from keras.constraints import MinMaxNorm
 from keras.callbacks import ModelCheckpoint, ReduceLROnPlateau, BackupAndRestore, CSVLogger
 from keras.optimizers import Adam
@@ -149,7 +149,7 @@ def main():
 def make_cnn(input_shape: tuple, output_shape: tuple) -> Sequential:
     model = Sequential()
 
-    # Block-1
+    # Convolution block #1
     model.add(
         Conv2D(
             filters=64, # Control the size of the convolution layer
@@ -172,9 +172,9 @@ def make_cnn(input_shape: tuple, output_shape: tuple) -> Sequential:
     )
     model.add(BatchNormalization())
     model.add(MaxPooling2D())
-    model.add(SpatialDropout2D(0.2))
+    model.add(Dropout(0.2))
 
-    # Block-2
+    # Convolution block #2
     model.add(
         Conv2D(
             filters=128, # Control the size of the convolution layer
@@ -196,9 +196,9 @@ def make_cnn(input_shape: tuple, output_shape: tuple) -> Sequential:
     )
     model.add(BatchNormalization())
     model.add(MaxPooling2D())
-    model.add(SpatialDropout2D(0.2))
+    model.add(Dropout(0.2))
 
-    # Block-3
+    # Convolution block #3
     model.add(
         Conv2D(
             filters=256, # Control the size of the convolution layer
@@ -220,9 +220,9 @@ def make_cnn(input_shape: tuple, output_shape: tuple) -> Sequential:
     )
     model.add(BatchNormalization())
     model.add(MaxPooling2D())
-    model.add(SpatialDropout2D(0.2))
+    model.add(Dropout(0.2))
 
-    # Block-4
+    # Dense block #1
     model.add(Flatten())
     model.add(
         Dense(
@@ -235,7 +235,7 @@ def make_cnn(input_shape: tuple, output_shape: tuple) -> Sequential:
     model.add(BatchNormalization())
     model.add(Dropout(0.5))
 
-    # Block-5
+    # Dense block #2
     model.add(
         Dense(
             units=256, # Control the size of the convolution layer
@@ -247,7 +247,7 @@ def make_cnn(input_shape: tuple, output_shape: tuple) -> Sequential:
     model.add(BatchNormalization())
     model.add(Dropout(0.5))
 
-    # Block-6
+    # Dense block #3
     model.add(
         Dense(
             units=output_shape[0],
