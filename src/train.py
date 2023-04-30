@@ -96,7 +96,7 @@ def main():
                 initial_value_threshold=best_val_acc
             ),
             tf.keras.callbacks.BackupAndRestore(backup_dir=constants.BACKUP_DIR_PATH),
-            tf.keras.callbacks.ReduceLROnPlateau(factor=1.0 / 3.0, verbose=1),
+            tf.keras.callbacks.ReduceLROnPlateau(factor=1.0 / 3.0, patience=5, verbose=1),
             tf.keras.callbacks.CSVLogger(filename=constants.TRAIN_LOG_FILE_PATH, append=True)
         ]
     )

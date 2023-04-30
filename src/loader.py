@@ -71,14 +71,8 @@ def load_dataset_pixels(usages: Set[str] = set(["Training", "PublicTest", "Priva
             if usage not in usages:
                 continue
 
-            # Reshape the pixels to fit cv2 library function
-            pixels = np.asarray(pixels.split(" "), np.uint8).reshape(48, 48)
-
-            # Normalize the pixels
-            pixels = pixels / 255.0
-
             # Reshape the pixels to fit CNN input layer
-            pixels = np.expand_dims(pixels, 2)
+            pixels = np.asarray(pixels.split(" "), np.uint8).reshape(48, 48, 1)
 
             if input[usage].get("x"):
                 input[usage]["x"].append(pixels)
@@ -165,8 +159,9 @@ def augment_dataset(x, y, batch_size: int = 32, save_to_dir: Optional[str] = Non
         width_shift_range=0.1,
         height_shift_range=0.1,
         zoom_range=0.1,
+        fill_mode="wrap",
         horizontal_flip=True,
-        fill_mode="wrap"
+        rescale=1.0 / 255, # Normalize the pixels
     )
 
     data_gen.fit(x)
