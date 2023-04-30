@@ -10,6 +10,6 @@ def index():
     return flask.render_template("index.html")
 
 
-@app.route("/detect_emotions")
+@app.route("/detect_emotions", methods=["POST"])
 def detect_emotions():
-    return ""
+    return {"message": "TODO: detect_emotions"}
