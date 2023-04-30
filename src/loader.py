@@ -2,7 +2,8 @@ import numpy as np
 import csv
 from itertools import islice
 import constants
-from typing import Set
+from typing import Set, Optional
+import tensorflow as tf
 
 
 """
@@ -156,3 +157,17 @@ def load_dataset_labels(usages: Set[str] = set(["Training", "PublicTest", "Priva
         input["PrivateTest"]["y"] = np.array(input["PrivateTest"].get("y", []))
 
     return input
+
+
+def augment_dataset(x, y, batch_size: int = 32, save_to_dir: Optional[str] = None):
+    data_gen = tf.keras.preprocessing.image.ImageDataGenerator(
+        rotation_range=20,
+        width_shift_range=0.1,
+        height_shift_range=0.1,
+        zoom_range=0.1,
+        horizontal_flip=True,
+        fill_mode="wrap"
+    )
+
+    data_gen.fit(x)
+    return data_gen.flow(x=x, y=y, batch_size=batch_size, save_to_dir=save_to_dir)

@@ -7,9 +7,11 @@ import constants
 import loader
 import csv
 from itertools import islice
+import math
 
 
 TRAIN_EPOCH = 50
+BATCH_SIZE = 16
 
 
 def main():
@@ -26,6 +28,10 @@ def main():
     print("y_train: ", y_train.shape)
     print("x_val: ", x_val.shape)
     print("y_val: ", y_val.shape)
+
+    # Augment the dataset
+    train_iter = loader.augment_dataset(x=x_train, y=y_train, batch_size=BATCH_SIZE)
+    val_iter = loader.augment_dataset(x=x_val, y=y_val, batch_size=BATCH_SIZE)
 
     model: tf.keras.Sequential
 
@@ -65,11 +71,9 @@ def main():
 
     # Train the CNN
     model.fit(
-        x=x_train,
-        y=y_train,
-        batch_size=16,
+        x=train_iter,
         epochs=to_epoch,
-        validation_data=(x_val, y_val),
+        validation_data=val_iter,
         class_weight=dict(
             enumerate(
                 sklearn_utils.compute_class_weight(
@@ -81,6 +85,8 @@ def main():
             )
         ),
         initial_epoch=last_epoch + 1,
+        steps_per_epoch=math.ceil(x_train.shape[0] / BATCH_SIZE),
+        validation_steps=math.ceil(x_val.shape[0] / BATCH_SIZE),
         callbacks=[
             tf.keras.callbacks.ModelCheckpoint(
                 filepath=constants.BEST_MODEL_DIR_PATH,
