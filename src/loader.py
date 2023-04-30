@@ -1,7 +1,6 @@
 import numpy as np
 import csv
 from itertools import islice
-import cv2
 import constants
 from typing import Set
 
@@ -73,12 +72,6 @@ def load_dataset_pixels(usages: Set[str] = set(["Training", "PublicTest", "Priva
 
             # Reshape the pixels to fit cv2 library function
             pixels = np.asarray(pixels.split(" "), np.uint8).reshape(48, 48)
-
-            # Equalize the image to make it clearer
-            pixels = cv2.equalizeHist(pixels)
-
-            # Denoise the image to make it easier for model to learn
-            pixels = cv2.fastNlMeansDenoising(src=pixels, h=16, templateWindowSize=7, searchWindowSize=21)
 
             # Normalize the pixels
             pixels = pixels / 255.0

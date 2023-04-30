@@ -1,10 +1,5 @@
 import numpy as np
-from keras import models
-from keras.models import Sequential
-from keras.layers import Conv2D, BatchNormalization, MaxPooling2D, Dropout, Flatten, Dense
-from keras.constraints import MinMaxNorm
-from keras.callbacks import ModelCheckpoint, ReduceLROnPlateau, BackupAndRestore, CSVLogger
-from keras.optimizers import Adam
+import tensorflow as tf
 import sklearn.utils as sklearn_utils
 import matplotlib.pyplot as plt
 import os
@@ -32,13 +27,13 @@ def main():
     print("x_val: ", x_val.shape)
     print("y_val: ", y_val.shape)
 
-    model: Sequential
+    model: tf.keras.Sequential
 
     # Can we start from the last model
     if os.path.isdir(constants.LAST_MODEL_DIR_PATH):
         # Resume from the last model
         print("Resuming from the last model...")
-        model = models.load_model(constants.LAST_MODEL_DIR_PATH)
+        model = tf.keras.models.load_model(constants.LAST_MODEL_DIR_PATH)
 
     else:
         # Build a CNN
@@ -87,16 +82,16 @@ def main():
         ),
         initial_epoch=last_epoch + 1,
         callbacks=[
-            ModelCheckpoint(
+            tf.keras.callbacks.ModelCheckpoint(
                 filepath=constants.BEST_MODEL_DIR_PATH,
                 monitor="val_accuracy",
                 verbose=1,
                 save_best_only=True,
                 initial_value_threshold=best_val_acc
             ),
-            BackupAndRestore(backup_dir=constants.BACKUP_DIR_PATH),
-            ReduceLROnPlateau(factor=1.0 / 3.0, verbose=1),
-            CSVLogger(filename=constants.TRAIN_LOG_FILE_PATH, append=True)
+            tf.keras.callbacks.BackupAndRestore(backup_dir=constants.BACKUP_DIR_PATH),
+            tf.keras.callbacks.ReduceLROnPlateau(factor=1.0 / 3.0, verbose=1),
+            tf.keras.callbacks.CSVLogger(filename=constants.TRAIN_LOG_FILE_PATH, append=True)
         ]
     )
 
@@ -146,117 +141,117 @@ def main():
         plt.close()
 
 
-def make_cnn(input_shape: tuple, output_shape: tuple) -> Sequential:
-    model = Sequential()
+def make_cnn(input_shape: tuple, output_shape: tuple) -> tf.keras.Sequential:
+    model = tf.keras.Sequential()
 
     # Convolution block #1
     model.add(
-        Conv2D(
+        tf.keras.layers.Conv2D(
             filters=64, # Control the size of the convolution layer
             activation="elu",
             kernel_size=3,
             kernel_initializer="he_normal",
-            kernel_constraint=MinMaxNorm(min_value=0.0625, max_value=4, axis=[0, 1, 2, 3]),
+            kernel_constraint=tf.keras.constraints.MinMaxNorm(min_value=0.0625, max_value=4, axis=[0, 1, 2, 3]),
             input_shape=input_shape
         )
     )
-    model.add(BatchNormalization())
+    model.add(tf.keras.layers.BatchNormalization())
     model.add(
-        Conv2D(
+        tf.keras.layers.Conv2D(
             filters=64, # Control the size of the convolution layer
             activation="elu",
             kernel_size=3,
             kernel_initializer="he_normal",
-            kernel_constraint=MinMaxNorm(min_value=0.0625, max_value=4, axis=[0, 1, 2, 3]),
+            kernel_constraint=tf.keras.constraints.MinMaxNorm(min_value=0.0625, max_value=4, axis=[0, 1, 2, 3]),
         )
     )
-    model.add(BatchNormalization())
-    model.add(MaxPooling2D())
-    model.add(Dropout(0.2))
+    model.add(tf.keras.layers.BatchNormalization())
+    model.add(tf.keras.layers.MaxPooling2D())
+    model.add(tf.keras.layers.Dropout(0.2))
 
     # Convolution block #2
     model.add(
-        Conv2D(
+        tf.keras.layers.Conv2D(
             filters=128, # Control the size of the convolution layer
             activation="elu",
             kernel_size=3,
             kernel_initializer="he_normal",
-            kernel_constraint=MinMaxNorm(min_value=0.0625, max_value=4, axis=[0, 1, 2, 3]),
+            kernel_constraint=tf.keras.constraints.MinMaxNorm(min_value=0.0625, max_value=4, axis=[0, 1, 2, 3]),
         )
     )
-    model.add(BatchNormalization())
+    model.add(tf.keras.layers.BatchNormalization())
     model.add(
-        Conv2D(
+        tf.keras.layers.Conv2D(
             filters=128, # Control the size of the convolution layer
             activation="elu",
             kernel_size=3,
             kernel_initializer="he_normal",
-            kernel_constraint=MinMaxNorm(min_value=0.0625, max_value=4, axis=[0, 1, 2, 3]),
+            kernel_constraint=tf.keras.constraints.MinMaxNorm(min_value=0.0625, max_value=4, axis=[0, 1, 2, 3]),
         )
     )
-    model.add(BatchNormalization())
-    model.add(MaxPooling2D())
-    model.add(Dropout(0.2))
+    model.add(tf.keras.layers.BatchNormalization())
+    model.add(tf.keras.layers.MaxPooling2D())
+    model.add(tf.keras.layers.Dropout(0.2))
 
     # Convolution block #3
     model.add(
-        Conv2D(
+        tf.keras.layers.Conv2D(
             filters=256, # Control the size of the convolution layer
             activation="elu",
             kernel_size=3,
             kernel_initializer="he_normal",
-            kernel_constraint=MinMaxNorm(min_value=0.0625, max_value=4, axis=[0, 1, 2, 3]),
+            kernel_constraint=tf.keras.constraints.MinMaxNorm(min_value=0.0625, max_value=4, axis=[0, 1, 2, 3]),
         )
     )
-    model.add(BatchNormalization())
+    model.add(tf.keras.layers.BatchNormalization())
     model.add(
-        Conv2D(
+        tf.keras.layers.Conv2D(
             filters=256, # Control the size of the convolution layer
             activation="elu",
             kernel_size=3,
             kernel_initializer="he_normal",
-            kernel_constraint=MinMaxNorm(min_value=0.0625, max_value=4, axis=[0, 1, 2, 3]),
+            kernel_constraint=tf.keras.constraints.MinMaxNorm(min_value=0.0625, max_value=4, axis=[0, 1, 2, 3]),
         )
     )
-    model.add(BatchNormalization())
-    model.add(MaxPooling2D())
-    model.add(Dropout(0.2))
+    model.add(tf.keras.layers.BatchNormalization())
+    model.add(tf.keras.layers.MaxPooling2D())
+    model.add(tf.keras.layers.Dropout(0.2))
 
     # Dense block #1
-    model.add(Flatten())
+    model.add(tf.keras.layers.Flatten())
     model.add(
-        Dense(
+        tf.keras.layers.Dense(
             units=512, # Control the size of the convolution layer
             activation="elu",
             kernel_initializer="he_normal",
-            kernel_constraint=MinMaxNorm(min_value=0.0625, max_value=4, axis=[0, 1]),
+            kernel_constraint=tf.keras.constraints.MinMaxNorm(min_value=0.0625, max_value=4, axis=[0, 1]),
         )
     )
-    model.add(BatchNormalization())
-    model.add(Dropout(0.5))
+    model.add(tf.keras.layers.BatchNormalization())
+    model.add(tf.keras.layers.Dropout(0.5))
 
     # Dense block #2
     model.add(
-        Dense(
+        tf.keras.layers.Dense(
             units=256, # Control the size of the convolution layer
             activation="elu",
             kernel_initializer="he_normal",
-            kernel_constraint=MinMaxNorm(min_value=0.0625, max_value=4, axis=[0, 1]),
+            kernel_constraint=tf.keras.constraints.MinMaxNorm(min_value=0.0625, max_value=4, axis=[0, 1]),
         )
     )
-    model.add(BatchNormalization())
-    model.add(Dropout(0.5))
+    model.add(tf.keras.layers.BatchNormalization())
+    model.add(tf.keras.layers.Dropout(0.5))
 
     # Dense block #3
     model.add(
-        Dense(
+        tf.keras.layers.Dense(
             units=output_shape[0],
             activation="softmax",
             kernel_initializer="glorot_normal",
         )
     )
 
-    model.compile(optimizer=Adam(0.001 / 3), loss="sparse_categorical_crossentropy", metrics=["accuracy"])
+    model.compile(optimizer=tf.keras.optimizers.Adam(0.001 / 3), loss="sparse_categorical_crossentropy", metrics=["accuracy"])
     model.summary()
 
     return model
