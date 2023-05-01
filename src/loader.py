@@ -2,8 +2,7 @@ import numpy as np
 import csv
 from itertools import islice
 import constants
-from typing import Set, Optional
-import tensorflow as tf
+from typing import Set
 
 
 """
@@ -73,6 +72,9 @@ def load_dataset_pixels(usages: Set[str] = set(["Training", "PublicTest", "Priva
 
             # Reshape the pixels to fit CNN input layer
             pixels = np.asarray(pixels.split(" "), np.uint8).reshape(48, 48, 1)
+
+            # Normalize the pixels
+            pixels = pixels / 255.0
 
             if input[usage].get("x"):
                 input[usage]["x"].append(pixels)
@@ -151,11 +153,3 @@ def load_dataset_labels(usages: Set[str] = set(["Training", "PublicTest", "Priva
         input["PrivateTest"]["y"] = np.array(input["PrivateTest"].get("y", []))
 
     return input
-
-
-def augment_dataset(x, y, batch_size: int = 32, save_to_dir: Optional[str] = None):
-    return tf.keras.preprocessing.image.ImageDataGenerator(
-        fill_mode="wrap",
-        horizontal_flip=True,
-        rescale=1.0 / 255, # Normalize the pixels
-    ).flow(x=x, y=y, batch_size=batch_size, save_to_dir=save_to_dir)
