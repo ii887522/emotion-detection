@@ -154,15 +154,8 @@ def load_dataset_labels(usages: Set[str] = set(["Training", "PublicTest", "Priva
 
 
 def augment_dataset(x, y, batch_size: int = 32, save_to_dir: Optional[str] = None):
-    data_gen = tf.keras.preprocessing.image.ImageDataGenerator(
-        rotation_range=20,
-        width_shift_range=0.1,
-        height_shift_range=0.1,
-        zoom_range=0.1,
+    return tf.keras.preprocessing.image.ImageDataGenerator(
         fill_mode="wrap",
         horizontal_flip=True,
         rescale=1.0 / 255, # Normalize the pixels
-    )
-
-    data_gen.fit(x)
-    return data_gen.flow(x=x, y=y, batch_size=batch_size, save_to_dir=save_to_dir)
+    ).flow(x=x, y=y, batch_size=batch_size, save_to_dir=save_to_dir)

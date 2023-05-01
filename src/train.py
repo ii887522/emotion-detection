@@ -257,9 +257,13 @@ def make_cnn(input_shape: tuple, output_shape: tuple) -> tf.keras.Sequential:
         )
     )
 
-    model.compile(optimizer=tf.keras.optimizers.Adam(0.001 / 3), loss="sparse_categorical_crossentropy", metrics=["accuracy"])
-    model.summary()
+    model.compile(
+        optimizer=tf.keras.optimizers.Adam(0.001 / 3),
+        loss="sparse_categorical_crossentropy",
+        metrics=["accuracy"]
+    )
 
+    model.summary()
     return model
 
 
