@@ -8,30 +8,41 @@
         <link href="bootstrap-5.3.0-alpha3-dist/css/bootstrap.min.css" rel="stylesheet" />
     </head>
 
-    <body class="p-2">
-        <h2>Emotion Detection System</h2>
+    <body class="p-3">
+        <h2 style="text-overflow: ellipsis; white-space: nowrap; overflow: hidden;">
+            <img class="float-left align-bottom" src="images/favicon.png" alt="Favicon" width="32" />
+            <span>Emotion Detection System</span>
+        </h2>
 
-        <ul class="nav nav-underline">
-            <li class="nav-item">
-                <a id="image-tab-item" class="nav-link active" href="#" onclick="navTo('image')">Image</a>
-            </li>
+        <div class="row mx-0">
+            <ul class="col-sm nav nav-underline" style="overflow-x: auto;">
+                <li class="nav-item">
+                    <a id="image-tab-item" class="nav-link active" href="#" onclick="navTo('image')">Image</a>
+                </li>
 
-            <li class="nav-item">
-                <a id="webcam-tab-item" class="nav-link" href="#" onclick="navTo('webcam')">Webcam</a>
-            </li>
-        </ul>
+                <li class="nav-item">
+                    <a id="cam-tab-item" class="nav-link" href="#" onclick="navTo('cam')">Camera</a>
+                </li>
+            </ul>
 
-        <!-- <div class="card mt-2 mb-3 shadow-sm">
-            <img id="input-image" class="card-img-top" style="object-fit: scale-down; max-height: 512px" src="images/placeholder.png" alt="Image" />
+            <ul class="col-sm nav nav-underline">
+                <li class="nav-item">
+                    <a id="cnn-tab-item" class="nav-link active" href="#" onclick="navAlgoTo('cnn')">CNN</a>
+                </li>
 
-            <div class="card-body">
-                <label class="card-title form-label fw-bold">Upload an image</label>
-                <input class="form-control" type="file" id="imageFile" accept="image/*" onchange="uploadImage(this)" />
-            </div>
-        </div> -->
+                <li class="nav-item">
+                    <a id="tl-tab-item" class="nav-link" href="#" onclick="navAlgoTo('tl')">Transfer Learning</a>
+                </li>
+            </ul>
+        </div>
 
-        <div class="card mt-2 mb-3 shadow-sm">
-            <video id="input-webcam" autoplay="true"></video>
+        <div id="image-page" class="card mt-2 mb-3 shadow-sm">
+            <img
+                id="input-image"
+                class="card-img-top"
+                style="object-fit: scale-down; max-height: 512px" src="images/placeholder.png"
+                alt="Image"
+            />
 
             <div class="card-body">
                 <label class="card-title form-label fw-bold">Upload an image</label>
@@ -39,20 +50,54 @@
             </div>
         </div>
 
+        <div id="cam-page" class="d-none card mt-2 mb-3 shadow-sm">
+            <video
+                id="input-cam"
+                class="card-img-top bg-dark"
+                style="object-fit: scale-down; max-height: 512px"
+                autoplay="true"
+            >
+            </video>
+
+            <img
+                id="failed-load-image"
+                class="d-none card-img-top"
+                style="object-fit: scale-down; max-height: 512px" src="images/video-load-failed.png"
+                alt="Failed to load from camera"
+            />
+
+            <div class="card-body d-flex justify-content-center">
+                <div class="btn-group" role="group">
+                    <input
+                        type="radio"
+                        class="btn-check"
+                        name="enableCam"
+                        id="on-button"
+                        autocomplete="off"
+                        onchange="onCam()"
+                    />
+
+                    <label class="btn btn-outline-primary px-4" for="on-button">ON</label>
+
+                    <input
+                        type="radio"
+                        class="btn-check"
+                        name="enableCam"
+                        id="off-button"
+                        autocomplete="off"
+                        checked
+                        onchange="offCam()"
+                    />
+
+                    <label class="btn btn-outline-primary px-4" for="off-button">OFF</label>
+                </div>
+            </div>
+        </div>
+
         <script src="bootstrap-5.3.0-alpha3-dist/js/bootstrap.bundle.min.js"></script>
 
         <script>
-            const inputWebcam = document.getElementById("input-webcam")
-
-            if (navigator.mediaDevices.getUserMedia) {
-                (async () => {
-                    try {
-                        inputWebcam.srcObject = await navigator.mediaDevices.getUserMedia({ video: true })
-                    } catch {
-                        console.log("Failed to load from webcam")
-                    }
-                })()
-            } else console.log("Get user media is not supported")
+            let camOnButtonChecked = false
 
             function uploadImage(input) {
                 if (!input.files || !input.files[0]) return
@@ -74,16 +119,84 @@
             }
 
             function navTo(route) {
-                document.getElementById("image-tab-item").className = "nav-link"
-                document.getElementById("webcam-tab-item").className = "nav-link"
+                const imageTabItem = document.getElementById("image-tab-item")
+                const camTabItem = document.getElementById("cam-tab-item")
+                const imagePage = document.getElementById("image-page")
+                const camPage = document.getElementById("cam-page")
+
+                imageTabItem.classList.remove("active")
+                camTabItem.classList.remove("active")
+                imagePage.classList.add("d-none")
+                camPage.classList.add("d-none")
 
                 switch (route) {
                     case "image":
-                        document.getElementById("image-tab-item").className = "nav-link active"
+                        imageTabItem.classList.add("active")
+                        imagePage.classList.remove("d-none")
+                        stopCam()
                         break
 
-                    case "webcam":
-                        document.getElementById("webcam-tab-item").className = "nav-link active"
+                    case "cam":
+                        camTabItem.classList.add("active")
+                        camPage.classList.remove("d-none")
+                        if (camOnButtonChecked) startCam()
+                }
+            }
+
+            function startCam() {
+                if (navigator.mediaDevices.getUserMedia) {
+                    const inputCam = document.getElementById("input-cam");
+
+                    (async () => {
+                        try {
+                            inputCam.srcObject = await navigator.mediaDevices.getUserMedia({ video: true })
+                            inputCam.classList.remove("d-none")
+                            document.getElementById("failed-load-image").classList.add("d-none")
+                        } catch {
+                            document.getElementById("input-cam").classList.add("d-none")
+                            document.getElementById("failed-load-image").classList.remove("d-none")
+                            alert("Failed to display from your camera. Please enable camera permission.")
+                        }
+                    })()
+                } else {
+                    document.getElementById("input-cam").classList.add("d-none")
+                    document.getElementById("failed-load-image").classList.remove("d-none")
+                    console.log("Get user media is not supported")
+                }
+            }
+
+            function stopCam() {
+                const inputCam = document.getElementById("input-cam")
+
+                if (inputCam.srcObject) {
+                    for (const track of inputCam.srcObject.getTracks()) track.stop()
+                    inputCam.srcObject = null;
+                }
+            }
+
+            function onCam() {
+                startCam()
+                camOnButtonChecked = true
+            }
+
+            function offCam() {
+                stopCam()
+                camOnButtonChecked = false
+            }
+
+            function navAlgoTo(algoType) {
+                const cnnTabItem = document.getElementById("cnn-tab-item")
+                const tlTabItem = document.getElementById("tl-tab-item")
+                cnnTabItem.classList.remove("active")
+                tlTabItem.classList.remove("active")
+
+                switch (algoType) {
+                    case "cnn":
+                        cnnTabItem.classList.add("active")
+                        break
+
+                    case "tl":
+                        tlTabItem.classList.add("active")
                 }
             }
         </script>
