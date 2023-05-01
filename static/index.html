@@ -16,12 +16,18 @@
 
         <div class="row mx-0">
             <ul class="col-sm nav nav-underline" style="overflow-x: auto;">
-                <li class="nav-item">
-                    <a id="image-tab-item" class="nav-link active" href="#" onclick="navTo('image')">Image</a>
+                <li class="nav-item me-2">
+                    <a id="image-tab-item" class="nav-link active" href="#" onclick="navTo('image')">
+                        <img class="me-1" src="images/image.png" alt="Image" width="24" />
+                        <span>Image</span>
+                    </a>
                 </li>
 
                 <li class="nav-item">
-                    <a id="cam-tab-item" class="nav-link" href="#" onclick="navTo('cam')">Camera</a>
+                    <a id="cam-tab-item" class="nav-link" href="#" onclick="navTo('cam')">
+                        <img class="me-1" src="images/camera.png" alt="Image" width="24" />
+                        <span>Camera</span>
+                    </a>
                 </li>
             </ul>
 
@@ -112,7 +118,15 @@
 
                 reader.onload = async e => {
                     document.getElementById("input-image").setAttribute("src", e.target.result)
-                    console.log(await fetch("/detect_emotions", { method: "POST" }))
+
+                    try {
+                        await fetch(
+                            "/detect_emotions",
+                            { method: "POST", body: JSON.stringify({ "data": e.target.result }) }
+                        )
+                    } catch {
+                        alert("Failed to detect emotions from the image")
+                    }
                 }
 
                 reader.readAsDataURL(input.files[0])

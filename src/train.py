@@ -151,8 +151,8 @@ def make_cnn(input_shape: tuple, output_shape: tuple) -> tf.keras.Sequential:
             kernel_initializer="he_normal",
             kernel_constraint=tf.keras.constraints.MinMaxNorm(min_value=0.0625, max_value=4, axis=[0, 1, 2, 3]),
             bias_constraint=tf.keras.constraints.MinMaxNorm(min_value=0.0625, max_value=4, axis=0),
-            kernel_regularizer=tf.keras.regularizers.L2(0.001),
-            bias_regularizer=tf.keras.regularizers.L2(0.001),
+            kernel_regularizer="l2",
+            bias_regularizer="l2",
             input_shape=input_shape
         )
     )
@@ -165,8 +165,8 @@ def make_cnn(input_shape: tuple, output_shape: tuple) -> tf.keras.Sequential:
             kernel_initializer="he_normal",
             kernel_constraint=tf.keras.constraints.MinMaxNorm(min_value=0.0625, max_value=4, axis=[0, 1, 2, 3]),
             bias_constraint=tf.keras.constraints.MinMaxNorm(min_value=0.0625, max_value=4, axis=0),
-            kernel_regularizer=tf.keras.regularizers.L2(0.001),
-            bias_regularizer=tf.keras.regularizers.L2(0.001),
+            kernel_regularizer="l2",
+            bias_regularizer="l2",
         )
     )
     model.add(tf.keras.layers.BatchNormalization())
@@ -182,8 +182,8 @@ def make_cnn(input_shape: tuple, output_shape: tuple) -> tf.keras.Sequential:
             kernel_initializer="he_normal",
             kernel_constraint=tf.keras.constraints.MinMaxNorm(min_value=0.0625, max_value=4, axis=[0, 1, 2, 3]),
             bias_constraint=tf.keras.constraints.MinMaxNorm(min_value=0.0625, max_value=4, axis=0),
-            kernel_regularizer=tf.keras.regularizers.L2(0.001),
-            bias_regularizer=tf.keras.regularizers.L2(0.001),
+            kernel_regularizer="l2",
+            bias_regularizer="l2",
         )
     )
     model.add(tf.keras.layers.BatchNormalization())
@@ -195,8 +195,8 @@ def make_cnn(input_shape: tuple, output_shape: tuple) -> tf.keras.Sequential:
             kernel_initializer="he_normal",
             kernel_constraint=tf.keras.constraints.MinMaxNorm(min_value=0.0625, max_value=4, axis=[0, 1, 2, 3]),
             bias_constraint=tf.keras.constraints.MinMaxNorm(min_value=0.0625, max_value=4, axis=0),
-            kernel_regularizer=tf.keras.regularizers.L2(0.001),
-            bias_regularizer=tf.keras.regularizers.L2(0.001),
+            kernel_regularizer="l2",
+            bias_regularizer="l2",
         )
     )
     model.add(tf.keras.layers.BatchNormalization())
@@ -212,8 +212,8 @@ def make_cnn(input_shape: tuple, output_shape: tuple) -> tf.keras.Sequential:
             kernel_initializer="he_normal",
             kernel_constraint=tf.keras.constraints.MinMaxNorm(min_value=0.0625, max_value=4, axis=[0, 1, 2, 3]),
             bias_constraint=tf.keras.constraints.MinMaxNorm(min_value=0.0625, max_value=4, axis=0),
-            kernel_regularizer=tf.keras.regularizers.L2(0.001),
-            bias_regularizer=tf.keras.regularizers.L2(0.001),
+            kernel_regularizer="l2",
+            bias_regularizer="l2",
         )
     )
     model.add(tf.keras.layers.BatchNormalization())
@@ -225,8 +225,8 @@ def make_cnn(input_shape: tuple, output_shape: tuple) -> tf.keras.Sequential:
             kernel_initializer="he_normal",
             kernel_constraint=tf.keras.constraints.MinMaxNorm(min_value=0.0625, max_value=4, axis=[0, 1, 2, 3]),
             bias_constraint=tf.keras.constraints.MinMaxNorm(min_value=0.0625, max_value=4, axis=0),
-            kernel_regularizer=tf.keras.regularizers.L2(0.001),
-            bias_regularizer=tf.keras.regularizers.L2(0.001),
+            kernel_regularizer="l2",
+            bias_regularizer="l2",
         )
     )
     model.add(tf.keras.layers.BatchNormalization())
@@ -242,8 +242,8 @@ def make_cnn(input_shape: tuple, output_shape: tuple) -> tf.keras.Sequential:
             kernel_initializer="he_normal",
             kernel_constraint=tf.keras.constraints.MinMaxNorm(min_value=0.0625, max_value=4, axis=[0, 1]),
             bias_constraint=tf.keras.constraints.MinMaxNorm(min_value=0.0625, max_value=4, axis=0),
-            kernel_regularizer=tf.keras.regularizers.L2(0.001),
-            bias_regularizer=tf.keras.regularizers.L2(0.001),
+            kernel_regularizer="l2",
+            bias_regularizer="l2",
         )
     )
     model.add(tf.keras.layers.BatchNormalization())
@@ -257,8 +257,8 @@ def make_cnn(input_shape: tuple, output_shape: tuple) -> tf.keras.Sequential:
             kernel_initializer="he_normal",
             kernel_constraint=tf.keras.constraints.MinMaxNorm(min_value=0.0625, max_value=4, axis=[0, 1]),
             bias_constraint=tf.keras.constraints.MinMaxNorm(min_value=0.0625, max_value=4, axis=0),
-            kernel_regularizer=tf.keras.regularizers.L2(0.001),
-            bias_regularizer=tf.keras.regularizers.L2(0.001),
+            kernel_regularizer="l2",
+            bias_regularizer="l2",
         )
     )
     model.add(tf.keras.layers.BatchNormalization())
