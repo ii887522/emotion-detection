@@ -141,7 +141,7 @@ def main():
 def make_cnn(input_shape: tuple, output_shape: tuple) -> tf.keras.Sequential:
     model = tf.keras.Sequential([
         # Preprocessing block
-        tf.keras.layers.Rescaling(1. / 255), # Normalize the input
+        tf.keras.layers.Rescaling(1. / 255, input_shape=input_shape), # Normalize the input
 
         # Convolution block #1
         tf.keras.layers.Conv2D(
