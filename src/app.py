@@ -42,31 +42,36 @@ def detect_emotions():
     print("Grayscaled image shape: ", grayscaled_image.shape)
 
     # Detect faces in the image
-    face_coords = face_classifier.detectMultiScale(grayscaled_image)
-
-    for (x, y, w, h) in face_coords:
+    for (x, y, w, h) in face_classifier.detectMultiScale(grayscaled_image):
         # Indicate a region of interest in the image
         cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
+        # Crop the region of interest from the grayscaled image
         roi_gray = grayscaled_image[y:y + h, x:x + w]
 
         # Resize the grayscaled region of interest
-        roi_gray = cv2.resize(roi_gray, IMAGE_SIZE, interpolation=cv2.INTER_AREA)
+        roi_gray = cv2.resize(roi_gray, constants.IMAGE_SIZE, interpolation=cv2.INTER_AREA)
 
         if np.sum([roi_gray]) != 0:
             # Normalize the grayscaled region of interest
             roi = roi_gray.astype("float") / 255.0
 
-            roi = tf.keras.preprocessing.image.img_to_array(roi)
-            roi = np.expand_dims(roi, axis=0)
+            # model.predict() expects an array of images instead of 1 image
+            roi = np.expand_dims(roi, 0)
 
-            # make a prediction on the ROI, then lookup the class
+            # Make a prediction on the region of interest, then lookup the class
+            # [0] because model.predict() returns an array of predictions. We only need the first prediction
             preds = model.predict(roi)[0]
+            print("Prediction: ", preds)
             label = constants.LABELS[preds.argmax()]
+            print("Label: ", label)
 
-            label_position = (x, y)
-            cv2.putText(images[i],label,label_position,cv2.FONT_HERSHEY_TRIPLEX,2,(0,0,255),3)
+            # Label the image with the predicted emotion
+            cv2.putText(image, label, (x, y), cv2.FONT_HERSHEY_TRIPLEX, 1, (0, 0, 255), 1)
+
         else:
-            cv2.putText(images[i],'No Face Found',(20,60),cv2.FONT_HERSHEY_TRIPLEX,2,(0,0,255),3)
+            # Display error message on the image
+            cv2.putText(image, "No Face Found", (20, 60), cv2.FONT_HERSHEY_TRIPLEX, 1, (0, 0, 255), 1)
 
-    return {"message": "TODO: detect_emotions"}
+    # Convert the image into base64 encoded string
+    return {"result": base64.b64encode(image.tobytes())}
