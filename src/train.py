@@ -141,7 +141,6 @@ def main():
 def make_cnn(input_shape: tuple, output_shape: tuple) -> tf.keras.Sequential:
     model = tf.keras.Sequential([
         # Preprocessing block
-        tf.keras.layers.RandomFlip("horizontal", input_shape=input_shape), # Data augmentation
         tf.keras.layers.Rescaling(1. / 255), # Normalize the input
 
         # Convolution block #1
