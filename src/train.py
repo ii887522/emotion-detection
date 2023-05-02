@@ -84,7 +84,6 @@ def main():
                 monitor="val_accuracy",
                 verbose=1,
                 save_best_only=True,
-                save_weights_only=True,
                 initial_value_threshold=best_val_acc
             ),
             tf.keras.callbacks.BackupAndRestore(backup_dir=constants.BACKUP_DIR_PATH),
