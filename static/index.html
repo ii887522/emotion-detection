@@ -111,6 +111,7 @@
 
         <script>
             let camOnButtonChecked = false
+            let mediaRecorder
 
             function uploadImage(input) {
                 if (!input.files || !input.files[0]) return
@@ -189,6 +190,17 @@
                     (async () => {
                         try {
                             inputCam.srcObject = await navigator.mediaDevices.getUserMedia({ video: true })
+                            const stream = inputCam.captureStream(15)
+                            mediaRecorder = new MediaRecorder(stream, { mimeType: "video/webm; codecs=vp9" })
+
+                            mediaRecorder.ondataavailable = event => {
+                                if (event.data.size > 0) {
+                                    // Stream camera video to the server
+                                }
+                            }
+
+                            mediaRecorder.start()
+
                             inputCam.classList.remove("d-none")
                             document.getElementById("failed-load-image").classList.add("d-none")
                         } catch {
@@ -205,6 +217,7 @@
             }
 
             function stopCam() {
+                mediaRecorder.stop()
                 const inputCam = document.getElementById("input-cam")
 
                 if (inputCam.srcObject) {

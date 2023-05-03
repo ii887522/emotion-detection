@@ -12,7 +12,7 @@ import converter
 
 
 app = Flask(__name__, static_url_path="", static_folder="../static", template_folder="../static")
-model: tf.keras.Sequential = tf.keras.models.load_model("bak/best_model")
+model: tf.keras.Sequential = tf.keras.models.load_model(constants.BEST_MODEL_DIR_PATH)
 face_classifier = cv2.CascadeClassifier(constants.HAARCASCADE_FRONTALFACE_DEFAULT_FILE_PATH)
 
 
