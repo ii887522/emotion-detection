@@ -140,13 +140,13 @@ def load_dataset_labels(usages: Set[str] = set(["Training", "PublicTest", "Priva
                 nf_vote_count
             ]
 
-            vote_count = vote_counts.index(max(vote_counts))
+            label = vote_counts.index(max(vote_counts))
 
             if input[usage].get("y"):
-                input[usage]["y"].append(vote_count)
+                input[usage]["y"].append(label)
 
             else:
-                input[usage]["y"] = [vote_count]
+                input[usage]["y"] = [label]
 
         input["Training"]["y"] = np.array(input["Training"].get("y", []))
         input["PublicTest"]["y"] = np.array(input["PublicTest"].get("y", []))

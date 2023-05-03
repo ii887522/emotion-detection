@@ -43,16 +43,23 @@
         </div>
 
         <div id="image-page" class="card mt-2 mb-3 shadow-sm">
-            <img
-                id="input-image"
-                class="card-img-top"
-                style="object-fit: scale-down; max-height: 512px" src="images/placeholder.png"
-                alt="Image"
-            />
+            <div class="d-flex justify-content-center align-items-center position-relative">
+                <img
+                    id="input-image"
+                    class="card-img-top"
+                    style="object-fit: scale-down; max-height: 512px"
+                    src="images/placeholder.png"
+                    alt="Image"
+                />
+
+                <div id="loading-icon" class="d-none spinner-border text-primary position-absolute" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
 
             <div class="card-body">
                 <label class="card-title form-label fw-bold">Upload an image</label>
-                <input class="form-control" type="file" id="imageFile" accept="image/*" onchange="uploadImage(this)" />
+                <input class="form-control" type="file" id="image-file" accept="image/*" onchange="uploadImage(this)" />
             </div>
         </div>
 
@@ -117,16 +124,34 @@
                 const reader = new FileReader()
 
                 reader.onload = async e => {
-                    document.getElementById("input-image").setAttribute("src", e.target.result)
+                    const inputImage = document.getElementById("input-image")
+                    const loadingIcon = document.getElementById("loading-icon")
+                    const imageFile = document.getElementById("image-file")
+                    inputImage.setAttribute("src", e.target.result)
+
+                    // Loading POST /detect_emotions
+                    inputImage.classList.add("opacity-50")
+                    loadingIcon.classList.remove("d-none")
+                    imageFile.classList.add("opacity-50")
+                    imageFile.setAttribute("disabled", "true")
 
                     try {
-                        await fetch(
+                        // POST /detect_emotions
+                        const resp = await fetch(
                             "/detect_emotions",
                             { method: "POST", body: JSON.stringify({ "data": e.target.result }) }
                         )
+                        const jsonResp = await resp.json()
+                        inputImage.setAttribute("src", jsonResp.result)
                     } catch {
                         alert("Failed to detect emotions from the image")
                     }
+
+                    // Done POST /detect_emotions
+                    inputImage.classList.remove("opacity-50")
+                    loadingIcon.classList.add("d-none")
+                    imageFile.classList.remove("opacity-50")
+                    imageFile.removeAttribute("disabled")
                 }
 
                 reader.readAsDataURL(input.files[0])
