@@ -63,7 +63,7 @@
             </div>
         </div>
 
-        <div id="cam-page" class="d-none card mt-2 mb-3 shadow-sm">
+        <div id="cam-page" class="d-none card mt-2 mb-3 shadow-sm position-relative">
             <video
                 id="input-cam"
                 class="card-img-top bg-dark"
@@ -73,9 +73,17 @@
             </video>
 
             <img
+                id="cam-overlay"
+                class="card-img-top position-absolute"
+                style="object-fit: scale-down; max-height: 512px"
+                alt="Camera overlay"
+            />
+
+            <img
                 id="failed-load-image"
                 class="d-none card-img-top"
-                style="object-fit: scale-down; max-height: 512px" src="images/video-load-failed.png"
+                style="object-fit: scale-down; max-height: 512px"
+                src="images/video-load-failed.png"
                 alt="Failed to load from camera"
             />
 
@@ -108,10 +116,14 @@
         </div>
 
         <script src="bootstrap-5.3.0-alpha3-dist/js/bootstrap.bundle.min.js"></script>
+        <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
 
         <script>
+            const socket = io()
+            const camOverlay = document.getElementById("cam-overlay")
             let camOnButtonChecked = false
-            let mediaRecorder
+
+            socket.on("overlay", data => camOverlay.setAttribute("src", data["data"]))
 
             function uploadImage(input) {
                 if (!input.files || !input.files[0]) return
@@ -186,23 +198,25 @@
             function startCam() {
                 if (navigator.mediaDevices.getUserMedia) {
                     const inputCam = document.getElementById("input-cam");
+                    const canvas = document.createElement("canvas")
+                    const ctx = canvas.getContext("2d")
+                    let timer
+
+                    inputCam.onplaying = () => {
+                        canvas.width = inputCam.videoWidth
+                        canvas.height = inputCam.videoHeight
+
+                        timer = setInterval(() => {
+                            ctx.drawImage(inputCam, 0, 0, canvas.width, canvas.height)
+                            socket.emit("frame", { data: canvas.toDataURL() })
+                        }, 1000 / 15) // 15 FPS
+                    }
+
+                    inputCam.onabort = () => clearInterval(timer);
 
                     (async () => {
                         try {
                             inputCam.srcObject = await navigator.mediaDevices.getUserMedia({ video: true })
-                            const streamFps = 15
-                            const stream = inputCam.captureStream(streamFps)
-                            mediaRecorder = new MediaRecorder(stream, { mimeType: "video/webm; codecs=vp9" })
-
-                            mediaRecorder.ondataavailable = event => {
-                                if (event.data.size > 0) {
-                                    // Stream camera video to the server
-                                    console.log(event.data)
-                                }
-                            }
-
-                            mediaRecorder.start(1000 / streamFps)
-
                             inputCam.classList.remove("d-none")
                             document.getElementById("failed-load-image").classList.add("d-none")
                         } catch {
@@ -234,7 +248,6 @@
 
             function offCam() {
                 stopCam()
-                mediaRecorder.stop()
                 camOnButtonChecked = false
             }
 
