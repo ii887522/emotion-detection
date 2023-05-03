@@ -42,12 +42,12 @@ def detect_emotions():
     print("Image shape: ", image.shape)
     print("Grayscaled image shape: ", grayscaled_image.shape)
 
+    min_image_dim = min([image.shape[0], image.shape[1]])
+
     # Detect faces in the image
     for (x, y, w, h) in face_classifier.detectMultiScale(
         grayscaled_image,
-	    minNeighbors=8,
-        minSize=(8, 8),
-	    flags=cv2.CASCADE_SCALE_IMAGE
+        minSize=(min_image_dim // 24, min_image_dim // 24),
     ):
         # Crop the region of interest from the grayscaled image
         roi_gray = grayscaled_image[y:y + h, x:x + w]
@@ -60,14 +60,12 @@ def detect_emotions():
 
         # Make a prediction on the region of interest, then lookup the class
         # [0] because model.predict() returns an array of predictions. We only need the first prediction
-        pred = model.predict(roi)[0]
+        pred = model(roi, training=False).numpy()[0]
         print("Prediction: ", pred)
         label = constants.LABELS[pred.argmax()]
         print("Label: ", label)
 
-        if label != "Unknown" and label != "NF":
-            min_image_dim = min([image.shape[0], image.shape[1]])
-
+        if label != "NF":
             # Indicate a region of interest in the image
             cv2.rectangle(image, (x, y), (x + w, y + h), (255, 0, 0, 255), max(round(min_image_dim / 256), 1))
 

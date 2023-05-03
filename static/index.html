@@ -190,16 +190,18 @@
                     (async () => {
                         try {
                             inputCam.srcObject = await navigator.mediaDevices.getUserMedia({ video: true })
-                            const stream = inputCam.captureStream(15)
+                            const streamFps = 15
+                            const stream = inputCam.captureStream(streamFps)
                             mediaRecorder = new MediaRecorder(stream, { mimeType: "video/webm; codecs=vp9" })
 
                             mediaRecorder.ondataavailable = event => {
                                 if (event.data.size > 0) {
                                     // Stream camera video to the server
+                                    console.log(event.data)
                                 }
                             }
 
-                            mediaRecorder.start()
+                            mediaRecorder.start(1000 / streamFps)
 
                             inputCam.classList.remove("d-none")
                             document.getElementById("failed-load-image").classList.add("d-none")
@@ -217,7 +219,6 @@
             }
 
             function stopCam() {
-                mediaRecorder.stop()
                 const inputCam = document.getElementById("input-cam")
 
                 if (inputCam.srcObject) {
@@ -233,6 +234,7 @@
 
             function offCam() {
                 stopCam()
+                mediaRecorder.stop()
                 camOnButtonChecked = false
             }
 
