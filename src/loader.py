@@ -1,3 +1,5 @@
+# Author: Yong Chi Min
+
 import numpy as np
 import csv
 from itertools import islice

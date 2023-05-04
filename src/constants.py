@@ -1,3 +1,5 @@
+# Author: Yong Chi Min
+
 # Resource file paths
 EMOTION_DIR_PATH = "res/emotions"
 HAARCASCADE_FRONTALFACE_DEFAULT_FILE_PATH = "res/haarcascade_frontalface_default.xml"

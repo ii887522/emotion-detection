@@ -1,3 +1,5 @@
+# Author: Yong Chi Min
+
 import numpy as np
 import tensorflow as tf
 import sklearn.utils as sklearn_utils
