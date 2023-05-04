@@ -1,8 +1,10 @@
+import numpy as np
 import TLConstants
 import os
 import TLLoader
 import csv
 import tensorflow as tf
+import sklearn.utils as sklearn_utils
 from tensorflow import keras
 from tensorflow.keras import layers
 from keras.models import load_model
@@ -62,17 +64,27 @@ to_epoch = ((last_epoch + 1) // TLConstants.TRAIN_EPOCH + 1) * TLConstants.TRAIN
 X = TLLoader.load_dataset(set(["Training", "PublicTest", "PrivateTest"]))
 
 ## training time
-new_model.fit(X["Training"]["x"],  X["Training"]["y"], epochs = to_epoch, validation_data=(X["PublicTest"]["x"], X["PublicTest"]["y"]), initial_epoch=last_epoch + 1, callbacks=[
-            tf.keras.callbacks.ModelCheckpoint(
-                filepath=TLConstants.BEST_TL_MODEL_DIR_PATH,
-                monitor="val_accuracy",
-                verbose=1,
-                save_best_only=True,
-                initial_value_threshold=best_val_acc
+new_model.fit(X["Training"]["x"],  X["Training"]["y"], epochs = to_epoch, validation_data=(X["PublicTest"]["x"], X["PublicTest"]["y"]),         class_weight=dict(
+        enumerate(
+            sklearn_utils.compute_class_weight(
+                class_weight="balanced",
+                classes=np.unique(X["Training"]["y"]),
+                y=X["Training"]["y"]
             ),
-            tf.keras.callbacks.BackupAndRestore(backup_dir=TLConstants.BACKUP_DIR_PATH),
-            tf.keras.callbacks.ReduceLROnPlateau(factor=1.0 / 3.0, patience=3, verbose=1),
-            tf.keras.callbacks.CSVLogger(filename=TLConstants.TL_TRAIN_LOG_FILE_PATH, append=True)
-        ])
+            0
+        )
+    ),
+            initial_epoch=last_epoch + 1, callbacks=[
+            tf.keras.callbacks.ModelCheckpoint(
+            filepath=TLConstants.BEST_TL_MODEL_DIR_PATH,
+            monitor="val_accuracy",
+            verbose=1,
+            save_best_only=True,
+            initial_value_threshold=best_val_acc
+        ),
+        tf.keras.callbacks.BackupAndRestore(backup_dir=TLConstants.BACKUP_DIR_PATH),
+        tf.keras.callbacks.ReduceLROnPlateau(factor=1.0 / 3.0, patience=3, verbose=1),
+        tf.keras.callbacks.CSVLogger(filename=TLConstants.TL_TRAIN_LOG_FILE_PATH, append=True)
+    ])
 print("Saving the last model...")
 new_model.save(TLConstants.LAST_TL_MODEL_DIR_PATH)

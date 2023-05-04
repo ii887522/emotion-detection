@@ -33,5 +33,5 @@ LABELS = [
 ]
 
 # Training config
-TRAIN_EPOCH = 50
+TRAIN_EPOCH = 5
 BATCH_SIZE = 16
