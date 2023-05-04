@@ -150,7 +150,6 @@ def make_cnn(input_shape: tuple, output_shape: tuple) -> tf.keras.Sequential:
             kernel_size=3,
             kernel_initializer="he_normal",
             kernel_constraint=tf.keras.constraints.MinMaxNorm(min_value=0.0625, max_value=4, axis=[0, 1, 2, 3]),
-            bias_constraint=tf.keras.constraints.MinMaxNorm(min_value=0.0625, max_value=4),
         ),
         tf.keras.layers.BatchNormalization(),
         tf.keras.layers.Conv2D(
@@ -159,7 +158,6 @@ def make_cnn(input_shape: tuple, output_shape: tuple) -> tf.keras.Sequential:
             kernel_size=3,
             kernel_initializer="he_normal",
             kernel_constraint=tf.keras.constraints.MinMaxNorm(min_value=0.0625, max_value=4, axis=[0, 1, 2, 3]),
-            bias_constraint=tf.keras.constraints.MinMaxNorm(min_value=0.0625, max_value=4),
         ),
         tf.keras.layers.BatchNormalization(),
         tf.keras.layers.MaxPooling2D(),
@@ -172,7 +170,6 @@ def make_cnn(input_shape: tuple, output_shape: tuple) -> tf.keras.Sequential:
             kernel_size=3,
             kernel_initializer="he_normal",
             kernel_constraint=tf.keras.constraints.MinMaxNorm(min_value=0.0625, max_value=4, axis=[0, 1, 2, 3]),
-            bias_constraint=tf.keras.constraints.MinMaxNorm(min_value=0.0625, max_value=4),
         ),
         tf.keras.layers.BatchNormalization(),
         tf.keras.layers.Conv2D(
@@ -181,7 +178,6 @@ def make_cnn(input_shape: tuple, output_shape: tuple) -> tf.keras.Sequential:
             kernel_size=3,
             kernel_initializer="he_normal",
             kernel_constraint=tf.keras.constraints.MinMaxNorm(min_value=0.0625, max_value=4, axis=[0, 1, 2, 3]),
-            bias_constraint=tf.keras.constraints.MinMaxNorm(min_value=0.0625, max_value=4),
         ),
         tf.keras.layers.BatchNormalization(),
         tf.keras.layers.MaxPooling2D(),
@@ -194,7 +190,6 @@ def make_cnn(input_shape: tuple, output_shape: tuple) -> tf.keras.Sequential:
             kernel_size=3,
             kernel_initializer="he_normal",
             kernel_constraint=tf.keras.constraints.MinMaxNorm(min_value=0.0625, max_value=4, axis=[0, 1, 2, 3]),
-            bias_constraint=tf.keras.constraints.MinMaxNorm(min_value=0.0625, max_value=4),
         ),
         tf.keras.layers.BatchNormalization(),
         tf.keras.layers.Conv2D(
@@ -203,31 +198,29 @@ def make_cnn(input_shape: tuple, output_shape: tuple) -> tf.keras.Sequential:
             kernel_size=3,
             kernel_initializer="he_normal",
             kernel_constraint=tf.keras.constraints.MinMaxNorm(min_value=0.0625, max_value=4, axis=[0, 1, 2, 3]),
-            bias_constraint=tf.keras.constraints.MinMaxNorm(min_value=0.0625, max_value=4),
         ),
         tf.keras.layers.BatchNormalization(),
         tf.keras.layers.MaxPooling2D(),
         tf.keras.layers.Dropout(0.2),
 
-        # Dense block #1
         tf.keras.layers.Flatten(),
+
+        # Dense block #1
         tf.keras.layers.Dense(
-            units=512, # Control the size of the convolution layer
+            units=256, # Control the size of the convolution layer
             activation="elu",
             kernel_initializer="he_normal",
             kernel_constraint=tf.keras.constraints.MinMaxNorm(min_value=0.0625, max_value=4, axis=[0, 1]),
-            bias_constraint=tf.keras.constraints.MinMaxNorm(min_value=0.0625, max_value=4),
         ),
         tf.keras.layers.BatchNormalization(),
         tf.keras.layers.Dropout(0.5),
 
         # Dense block #2
         tf.keras.layers.Dense(
-            units=256, # Control the size of the convolution layer
+            units=128, # Control the size of the convolution layer
             activation="elu",
             kernel_initializer="he_normal",
             kernel_constraint=tf.keras.constraints.MinMaxNorm(min_value=0.0625, max_value=4, axis=[0, 1]),
-            bias_constraint=tf.keras.constraints.MinMaxNorm(min_value=0.0625, max_value=4),
         ),
         tf.keras.layers.BatchNormalization(),
         tf.keras.layers.Dropout(0.5),
