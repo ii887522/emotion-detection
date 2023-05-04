@@ -49,6 +49,7 @@ def detect_emotions():
     # Detect faces in the image
     for (x, y, w, h) in face_classifier.detectMultiScale(
         grayscaled_image,
+        minNeighbors=9,
         minSize=(min_image_dim // 24, min_image_dim // 24),
     ):
         # Crop the region of interest from the grayscaled image
@@ -109,6 +110,7 @@ def on_frame(req):
     # Detect faces in the image
     for (x, y, w, h) in face_classifier.detectMultiScale(
         grayscaled_image,
+        minNeighbors=9,
         minSize=(min_image_dim // 24, min_image_dim // 24),
     ):
         # Crop the region of interest from the grayscaled image
