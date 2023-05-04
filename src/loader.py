@@ -5,7 +5,6 @@ import csv
 from itertools import islice
 import constants
 from typing import Set
-import cv2
 
 
 """
