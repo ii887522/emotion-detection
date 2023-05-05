@@ -165,6 +165,6 @@ if __name__ == '__main__':
     # Warm-up AI engine
     face_classifier.detectMultiScale(np.zeros((constants.IMAGE_SIZE[0], constants.IMAGE_SIZE[1]), dtype=np.uint8))
     cnn_model(np.zeros((1, constants.IMAGE_SIZE[0], constants.IMAGE_SIZE[1], 1), dtype=np.uint8), training=False)
-    tl_model(np.zeros((1, constants.IMAGE_SIZE[0], constants.IMAGE_SIZE[1], 1), dtype=np.uint8), training=False)
+    tl_model(np.zeros((1, constants.IMAGE_SIZE[0], constants.IMAGE_SIZE[1], 3), dtype=np.uint8), training=False)
 
     socketio.run(app)
