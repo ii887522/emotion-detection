@@ -211,7 +211,7 @@
                         timer = setInterval(() => {
                             ctx.drawImage(inputCam, 0, 0, canvas.width, canvas.height)
                             socket.emit("frame", { data: canvas.toDataURL() })
-                        }, 1000 / 1) // 1 FPS
+                        }, 1000 / 2) // 2 FPS
                     }
 
                     inputCam.onabort = () => clearInterval(timer);

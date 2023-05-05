@@ -5,5 +5,5 @@
 3. Run `conda activate <path to .conda folder>`
 4. Run install_conda_deps.bat
 5. Run `pip install -r requirements.txt`
-6. Run `flask --app src/app.py run`
+6. Run `python src/app.py`
 7. Launch `http://localhost:5000/` in a web browser

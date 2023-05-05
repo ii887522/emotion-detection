@@ -16,8 +16,8 @@ from flask_socketio import SocketIO, emit
 
 app = Flask(__name__, static_url_path="", static_folder="../static", template_folder="../static")
 socketio = SocketIO(app)
-model: tf.keras.Sequential = tf.keras.models.load_model(constants.BEST_MODEL_DIR_PATH)
 face_classifier = cv2.CascadeClassifier(constants.HAARCASCADE_FRONTALFACE_DEFAULT_FILE_PATH)
+model: tf.keras.Sequential = tf.keras.models.load_model(constants.BEST_MODEL_DIR_PATH)
 
 
 @app.route("/")
@@ -51,7 +51,7 @@ def detect_emotions():
     # Detect faces in the image
     for (x, y, w, h) in face_classifier.detectMultiScale(
         grayscaled_image,
-        minNeighbors=9,
+        minNeighbors=7,
         minSize=(min_image_dim // 24, min_image_dim // 24),
     ):
         # Crop the region of interest from the grayscaled image
@@ -112,7 +112,7 @@ def on_frame(req):
     # Detect faces in the image
     for (x, y, w, h) in face_classifier.detectMultiScale(
         grayscaled_image,
-        minNeighbors=9,
+        minNeighbors=7,
         minSize=(min_image_dim // 24, min_image_dim // 24),
     ):
         # Crop the region of interest from the grayscaled image
@@ -149,4 +149,8 @@ def on_frame(req):
 
 
 if __name__ == '__main__':
+    # Warm-up AI engine
+    face_classifier.detectMultiScale(np.zeros((constants.IMAGE_SIZE[0], constants.IMAGE_SIZE[1]), dtype=np.uint8))
+    model(np.zeros((1, constants.IMAGE_SIZE[0], constants.IMAGE_SIZE[1], 1), dtype=np.uint8), training=False)
+
     socketio.run(app)
