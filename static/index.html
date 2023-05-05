@@ -1,0 +1,280 @@
+<!-- Author: Yong Chi Min -->
+<!DOCTYPE html>
+
+<html>
+    <head>
+        <title>Emotion Detection System</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <link rel="icon" href="images/favicon.png" />
+        <link href="bootstrap-5.3.0-alpha3-dist/css/bootstrap.min.css" rel="stylesheet" />
+    </head>
+
+    <body class="p-3">
+        <h2 style="text-overflow: ellipsis; white-space: nowrap; overflow: hidden;">
+            <img class="float-left align-bottom" src="images/favicon.png" alt="Favicon" width="32" />
+            <span>Emotion Detection System</span>
+        </h2>
+
+        <div class="row mx-0">
+            <ul class="col-sm nav nav-underline" style="overflow-x: auto;">
+                <li class="nav-item me-2">
+                    <a id="image-tab-item" class="nav-link active" href="#" onclick="navTo('image')">
+                        <img class="me-1" src="images/image.png" alt="Image" width="24" />
+                        <span>Image</span>
+                    </a>
+                </li>
+
+                <li class="nav-item">
+                    <a id="cam-tab-item" class="nav-link" href="#" onclick="navTo('cam')">
+                        <img class="me-1" src="images/camera.png" alt="Image" width="24" />
+                        <span>Camera</span>
+                    </a>
+                </li>
+            </ul>
+
+            <ul class="col-sm nav nav-underline">
+                <li class="nav-item">
+                    <a id="cnn-tab-item" class="nav-link active" href="#" onclick="navAlgoTo('cnn')">CNN</a>
+                </li>
+
+                <li class="nav-item">
+                    <a id="tl-tab-item" class="nav-link" href="#" onclick="navAlgoTo('tl')">Transfer Learning</a>
+                </li>
+            </ul>
+        </div>
+
+        <div id="image-page" class="card mt-2 mb-3 shadow-sm">
+            <div class="d-flex justify-content-center align-items-center position-relative">
+                <img
+                    id="input-image"
+                    class="card-img-top"
+                    style="object-fit: scale-down; max-height: 512px"
+                    src="images/placeholder.png"
+                    alt="Image"
+                />
+
+                <div id="loading-icon" class="d-none spinner-border text-primary position-absolute" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+
+            <div class="card-body">
+                <label class="card-title form-label fw-bold">Upload an image</label>
+                <input class="form-control" type="file" id="image-file" accept="image/*" onchange="uploadImage(this)" />
+            </div>
+        </div>
+
+        <div id="cam-page" class="d-none card mt-2 mb-3 shadow-sm position-relative">
+            <video
+                id="input-cam"
+                class="card-img-top bg-dark"
+                style="object-fit: scale-down; max-height: 512px"
+                autoplay="true"
+            >
+            </video>
+
+            <img
+                id="cam-overlay"
+                class="d-none card-img-top position-absolute"
+                style="object-fit: scale-down; max-height: 512px"
+                alt="Camera overlay"
+                src="images/empty.png"
+            />
+
+            <img
+                id="failed-load-image"
+                class="d-none card-img-top"
+                style="object-fit: scale-down; max-height: 512px"
+                src="images/video-load-failed.png"
+                alt="Failed to load from camera"
+            />
+
+            <div class="card-body d-flex justify-content-center">
+                <div class="btn-group" role="group">
+                    <input
+                        type="radio"
+                        class="btn-check"
+                        name="enableCam"
+                        id="on-button"
+                        autocomplete="off"
+                        onchange="onCam()"
+                    />
+
+                    <label class="btn btn-outline-primary px-4" for="on-button">ON</label>
+
+                    <input
+                        type="radio"
+                        class="btn-check"
+                        name="enableCam"
+                        id="off-button"
+                        autocomplete="off"
+                        checked
+                        onchange="offCam()"
+                    />
+
+                    <label class="btn btn-outline-primary px-4" for="off-button">OFF</label>
+                </div>
+            </div>
+        </div>
+
+        <script src="bootstrap-5.3.0-alpha3-dist/js/bootstrap.bundle.min.js"></script>
+        <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+
+        <script>
+            const socket = io()
+            const camOverlay = document.getElementById("cam-overlay")
+            let camOnButtonChecked = false
+            let currentAlg = "cnn"
+
+            socket.on("overlay", data => camOverlay.setAttribute("src", data["data"]))
+
+            function uploadImage(input) {
+                if (!input.files || !input.files[0]) return
+
+                if (!input.files[0]["type"].startsWith("image/")) {
+                    alert("File chosen is not an image")
+                    input.value = ""
+                    return
+                }
+
+                const reader = new FileReader()
+
+                reader.onload = async e => {
+                    const inputImage = document.getElementById("input-image")
+                    const loadingIcon = document.getElementById("loading-icon")
+                    const imageFile = document.getElementById("image-file")
+                    inputImage.setAttribute("src", e.target.result)
+
+                    // Loading POST /detect_emotions
+                    inputImage.classList.add("opacity-50")
+                    loadingIcon.classList.remove("d-none")
+                    imageFile.classList.add("opacity-50")
+                    imageFile.setAttribute("disabled", "true")
+
+                    try {
+                        // POST /detect_emotions
+                        const resp = await fetch(
+                            "/detect_emotions",
+                            { method: "POST", body: JSON.stringify({ "data": e.target.result, "alg": currentAlg }) }
+                        )
+                        const jsonResp = await resp.json()
+                        inputImage.setAttribute("src", jsonResp.result)
+                    } catch {
+                        alert("Failed to detect emotions from the image")
+                    }
+
+                    // Done POST /detect_emotions
+                    inputImage.classList.remove("opacity-50")
+                    loadingIcon.classList.add("d-none")
+                    imageFile.classList.remove("opacity-50")
+                    imageFile.removeAttribute("disabled")
+                }
+
+                reader.readAsDataURL(input.files[0])
+            }
+
+            function navTo(route) {
+                const imageTabItem = document.getElementById("image-tab-item")
+                const camTabItem = document.getElementById("cam-tab-item")
+                const imagePage = document.getElementById("image-page")
+                const camPage = document.getElementById("cam-page")
+
+                imageTabItem.classList.remove("active")
+                camTabItem.classList.remove("active")
+                imagePage.classList.add("d-none")
+                camPage.classList.add("d-none")
+
+                switch (route) {
+                    case "image":
+                        imageTabItem.classList.add("active")
+                        imagePage.classList.remove("d-none")
+                        stopCam()
+                        break
+
+                    case "cam":
+                        camTabItem.classList.add("active")
+                        camPage.classList.remove("d-none")
+                        if (camOnButtonChecked) startCam()
+                }
+            }
+
+            function startCam() {
+                if (navigator.mediaDevices.getUserMedia) {
+                    const inputCam = document.getElementById("input-cam")
+                    const camOverlay = document.getElementById("cam-overlay")
+                    const canvas = document.createElement("canvas")
+                    const ctx = canvas.getContext("2d")
+                    let timer
+
+                    inputCam.onplaying = () => {
+                        canvas.width = inputCam.videoWidth
+                        canvas.height = inputCam.videoHeight
+
+                        timer = setInterval(() => {
+                            ctx.drawImage(inputCam, 0, 0, canvas.width, canvas.height)
+                            socket.emit("frame", { data: canvas.toDataURL(), alg: currentAlg })
+                        }, 1000 / 2) // 2 FPS
+                    }
+
+                    inputCam.onabort = () => clearInterval(timer);
+
+                    (async () => {
+                        try {
+                            inputCam.srcObject = await navigator.mediaDevices.getUserMedia({ video: true })
+                            inputCam.classList.remove("d-none")
+                            camOverlay.setAttribute("src", "images/empty.png")
+                            camOverlay.classList.remove("d-none")
+                            document.getElementById("failed-load-image").classList.add("d-none")
+                        } catch {
+                            document.getElementById("input-cam").classList.add("d-none")
+                            document.getElementById("failed-load-image").classList.remove("d-none")
+                            alert("Failed to display from your camera. Please enable camera permission.")
+                        }
+                    })()
+                } else {
+                    document.getElementById("input-cam").classList.add("d-none")
+                    document.getElementById("failed-load-image").classList.remove("d-none")
+                    console.log("Get user media is not supported")
+                }
+            }
+
+            function stopCam() {
+                document.getElementById("cam-overlay").classList.add("d-none")
+                const inputCam = document.getElementById("input-cam")
+
+                if (inputCam.srcObject) {
+                    for (const track of inputCam.srcObject.getTracks()) track.stop()
+                    inputCam.srcObject = null;
+                }
+            }
+
+            function onCam() {
+                startCam()
+                camOnButtonChecked = true
+            }
+
+            function offCam() {
+                stopCam()
+                camOnButtonChecked = false
+            }
+
+            function navAlgoTo(algo) {
+                const cnnTabItem = document.getElementById("cnn-tab-item")
+                const tlTabItem = document.getElementById("tl-tab-item")
+                cnnTabItem.classList.remove("active")
+                tlTabItem.classList.remove("active")
+
+                switch (algo) {
+                    case "cnn":
+                        cnnTabItem.classList.add("active")
+                        break
+
+                    case "tl":
+                        tlTabItem.classList.add("active")
+                }
+
+                currentAlg = algo
+            }
+        </script>
+    </body>
+</html>

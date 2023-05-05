@@ -1,371 +1,254 @@
+# Author: Yong Chi Min
+
 import numpy as np
-from keras import models
-from keras.models import Sequential
-from keras.layers import Conv2D, BatchNormalization, MaxPooling2D, Dropout, Flatten, Dense
-from keras.constraints import MinMaxNorm
-from keras.callbacks import ModelCheckpoint, ReduceLROnPlateau
+import tensorflow as tf
 import sklearn.utils as sklearn_utils
-import sklearn.metrics as sklearn_metrics
+import matplotlib.pyplot as plt
 import os
+import constants
+import loader
 import csv
 from itertools import islice
-import matplotlib.pyplot as plt
-import seaborn as sn
-import pandas as pd
-
-
-EMOTION_DIR_PATH = "res/emotions"
-BEST_CHECKPOINT_FILE_PATH = "build/best.h5"
-LAST_CHECKPOINT_FILE_PATH = "build/last.h5"
-BEST_VALIDATION_ACCURACY_FILE_PATH = "build/best_val_acc.txt"
 
 
 def main():
-    # Load dataset
-    print("Loading dataset...")
-    dataset = load_dataset()
-
+    # Load training and validation dataset
+    print("Loading training and validation dataset...")
+    dataset = loader.load_dataset(usages=set(["Training", "PublicTest"]))
     x_train = dataset["Training"]["x"]
     y_train = dataset["Training"]["y"]
     x_val = dataset["PublicTest"]["x"]
     y_val = dataset["PublicTest"]["y"]
-    x_test = dataset["PrivateTest"]["x"]
-    y_test = dataset["PrivateTest"]["y"]
 
     # Check the dataset shape
     print("x_train: ", x_train.shape)
     print("y_train: ", y_train.shape)
     print("x_val: ", x_val.shape)
     print("y_val: ", y_val.shape)
-    print("x_test: ", x_test.shape)
-    print("y_test: ", y_test.shape)
 
-    model: Sequential
+    model: tf.keras.Sequential
 
-    # Can we start from checkpoint ?
-    if os.path.isfile(LAST_CHECKPOINT_FILE_PATH):
-        # Resume from the last checkpoint
-        model = models.load_model(LAST_CHECKPOINT_FILE_PATH)
+    # Can we start from the last model
+    if os.path.isdir(constants.LAST_MODEL_DIR_PATH):
+        # Resume from the last model
+        print("Resuming from the last model...")
+        model = tf.keras.models.load_model(constants.LAST_MODEL_DIR_PATH)
 
     else:
         # Build a CNN
-        model = make_cnn(input_shape=x_train.shape[1:], output_shape=(10,))
+        print("No last model found. Building a CNN...")
+        model = make_cnn(input_shape=x_train.shape[1:], output_shape=(len(constants.LABELS),))
 
-    # Load the best validation accuracy
+    best_val_acc = 0.0
+    last_epoch = -1
+
+    # Load the best validation accuracy and last epoch
     try:
         print("Loading the best validation accuracy...")
+        print("Loading the last epoch...")
 
-        with open(BEST_VALIDATION_ACCURACY_FILE_PATH, "r") as best_val_acc_file:
-            best_val_acc = float(best_val_acc_file.read())
+        with open(constants.TRAIN_LOG_FILE_PATH) as train_log_file:
+            for row in islice(csv.reader(train_log_file), 1, None):
+                [epoch, _, _, _, val_acc, _] = row
+                best_val_acc = max(best_val_acc, float(val_acc))
+                last_epoch = int(epoch)
 
-        print("best_val_acc: ", best_val_acc)
+            print("best_val_acc", best_val_acc)
+            print("last_epoch", last_epoch)
 
     except:
-        print("Failed to load the accuracy. Set best_val_acc = 0.0")
-        best_val_acc = 0.0
+        print("Failed to load the best validation accuracy. Default best_val_acc to 0.0")
+        print("Failed to load the last epoch. Default last_epoch to -1")
+
+    to_epoch = ((last_epoch + 1) // constants.TRAIN_EPOCH + 1) * constants.TRAIN_EPOCH
 
     # Train the CNN
-    history = model.fit(
+    model.fit(
         x=x_train,
         y=y_train,
-        epochs=50,
-        verbose=1,
+        batch_size=constants.BATCH_SIZE,
+        epochs=to_epoch,
         validation_data=(x_val, y_val),
-        class_weight=dict(enumerate(sklearn_utils.compute_class_weight(class_weight="balanced", classes=np.unique(y_train), y=y_train), 0)),
+        class_weight=dict(
+            enumerate(
+                sklearn_utils.compute_class_weight(
+                    class_weight="balanced",
+                    classes=np.unique(y_train),
+                    y=y_train
+                ),
+                0
+            )
+        ),
+        initial_epoch=last_epoch + 1,
         callbacks=[
-            ModelCheckpoint(filepath=BEST_CHECKPOINT_FILE_PATH, monitor="val_accuracy", verbose=1, save_best_only=True, initial_value_threshold=best_val_acc),
-            ModelCheckpoint(filepath=LAST_CHECKPOINT_FILE_PATH, monitor="val_accuracy", verbose=1),
-            ReduceLROnPlateau(factor=1.0 / 3.0, verbose=1)
+            tf.keras.callbacks.ModelCheckpoint(
+                filepath=constants.BEST_MODEL_DIR_PATH,
+                monitor="val_accuracy",
+                verbose=1,
+                save_best_only=True,
+                initial_value_threshold=best_val_acc
+            ),
+            tf.keras.callbacks.BackupAndRestore(backup_dir=constants.BACKUP_DIR_PATH),
+            tf.keras.callbacks.ReduceLROnPlateau(factor=1.0 / 3.0, patience=7, verbose=1),
+            tf.keras.callbacks.CSVLogger(filename=constants.TRAIN_LOG_FILE_PATH, append=True)
         ]
     )
 
-    # Save the best validation accuracy
-    print("Save the best validation accuracy...")
+    # Save the last model
+    print("Saving the last model...")
+    model.save(constants.LAST_MODEL_DIR_PATH)
 
-    with open(BEST_VALIDATION_ACCURACY_FILE_PATH, "w") as best_val_acc_file:
-        best_val_acc_file.write(str(max(max(history.history['val_accuracy']), best_val_acc)))
+    # Preparing training reports
+    print("Generating training reports...")
+    os.mkdir(f"{constants.REPORT_DIR_PATH}/{to_epoch - constants.TRAIN_EPOCH + 1}-{to_epoch}")
 
-    # Summarize history for accuracy
-    plt.plot(history.history['accuracy'])
-    plt.plot(history.history['val_accuracy'])
-    plt.title('model accuracy')
-    plt.ylabel('accuracy')
-    plt.xlabel('epoch')
-    plt.legend(['train', 'test'], loc='upper left')
-    plt.show()
+    with open(constants.TRAIN_LOG_FILE_PATH) as train_log_file:
+        epoches = []
+        accs = []
+        val_accs = []
+        losses = []
+        val_losses = []
 
-    # Summarize history for loss
-    plt.plot(history.history['loss'])
-    plt.plot(history.history['val_loss'])
-    plt.title('model loss')
-    plt.ylabel('loss')
-    plt.xlabel('epoch')
-    plt.legend(['train', 'test'], loc='upper left')
-    plt.show()
+        for row in islice(csv.reader(train_log_file), to_epoch - constants.TRAIN_EPOCH + 1, None):
+            [epoch, acc, loss, _, val_acc, val_loss] = row
+            epoches.append(int(epoch) + 1)
+            accs.append(float(acc))
+            val_accs.append(float(val_acc))
+            losses.append(float(loss))
+            val_losses.append(float(val_loss))
 
-    # Evaluate the CNN
-    metrics = model.evaluate(x=x_test, y=y_test, verbose=1, return_dict=True)
-    print(metrics)
+        # Summarize history for loss and save the result
+        print("Generating model loss report...")
+        plt.plot(epoches, losses)
+        plt.plot(epoches, val_losses)
+        plt.title('Model Loss')
+        plt.ylabel('loss')
+        plt.xlabel('epoch')
+        plt.legend(['Train', 'Test'], loc='upper left')
+        plt.savefig(f"{constants.REPORT_DIR_PATH}/{to_epoch - constants.TRAIN_EPOCH + 1}-{to_epoch}/model-loss.png")
+        plt.close()
 
-    # Predict from the CNN
-    y_pred = model.predict(x=x_test, verbose=1)
-    y_pred = np.argmax(y_pred, axis=1)
-
-    # Plot a confusion matrix
-    result = sklearn_metrics.confusion_matrix(y_test, y_pred, normalize="pred")
-    labels = ["Neutral", "Happiness", "Surprise", "Sadness", "Anger", "Disgust", "Fear", "Contempt", "Unknown", "NF"]
-    df_cm = pd.DataFrame(result, index=labels, columns=labels)
-    sn.heatmap(df_cm, annot=True)
-    plt.show()
-
-
-"""
-{
-    "Training": {
-        "x": (N, 48, 48, 1),
-        "y": (N,)
-    },
-    "PublicTest": {
-        "x": (N, 48, 48, 1),
-        "y": (N,)
-    },
-    "PrivateTest": {
-        "x": (N, 48, 48, 1),
-        "y": (N,)
-    }
-}
-"""
-def load_dataset() -> dict:
-    input = {
-        "Training": {},
-        "PublicTest": {},
-        "PrivateTest": {}
-    }
-
-    print("Loading dataset pixels...")
-    pixels = load_dataset_pixels()
-    input["Training"]["x"] = pixels["Training"]["x"]
-    input["PublicTest"]["x"] = pixels["PublicTest"]["x"]
-    input["PrivateTest"]["x"] = pixels["PrivateTest"]["x"]
-
-    print("Loading dataset labels...")
-    labels = load_dataset_labels()
-    input["Training"]["y"] = labels["Training"]["y"]
-    input["PublicTest"]["y"] = labels["PublicTest"]["y"]
-    input["PrivateTest"]["y"] = labels["PrivateTest"]["y"]
-
-    return input
+        # Summarize history for accuracy and save the result
+        print("Generating model accuracy report...")
+        plt.plot(epoches, accs)
+        plt.plot(epoches, val_accs)
+        plt.title('Model Accuracy')
+        plt.ylabel('accuracy')
+        plt.xlabel('epoch')
+        plt.legend(['Train', 'Test'], loc='upper left')
+        plt.savefig(f"{constants.REPORT_DIR_PATH}/{to_epoch - constants.TRAIN_EPOCH + 1}-{to_epoch}/model-acc.png")
+        plt.close()
 
 
-"""
-{
-    "Training": {
-        "x": (N, 48, 48, 1),
-    },
-    "PublicTest": {
-        "x": (N, 48, 48, 1),
-    },
-    "PrivateTest": {
-        "x": (N, 48, 48, 1),
-    }
-}
-"""
-def load_dataset_pixels() -> dict:
-    input = {}
+def make_cnn(input_shape: tuple, output_shape: tuple) -> tf.keras.Sequential:
+    model = tf.keras.Sequential([
+        # Preprocessing block
+        tf.keras.layers.Rescaling(1. / 255, input_shape=input_shape), # Normalize the input
 
-    with open(f"{EMOTION_DIR_PATH}/fer2013.csv") as old_fer_file:
-        for row in islice(csv.reader(old_fer_file), 1, None):
-            [_, pixels, usage] = row
-            pixels = np.asarray(pixels.split(" "), np.uint8).reshape(48, 48, 1)
-
-            # Normalize pixels
-            pixels = pixels / 255.0
-
-            if input.get(usage) and input[usage].get("x"):
-                input[usage]["x"].append(pixels)
-
-            else:
-                input[usage] = {"x": [pixels]}
-
-        input["Training"]["x"] = np.array(input["Training"]["x"])
-        input["PublicTest"]["x"] = np.array(input["PublicTest"]["x"])
-        input["PrivateTest"]["x"] = np.array(input["PrivateTest"]["x"])
-
-    return input
-
-
-"""
-{
-    "Training": {
-        "y": (N,)
-    },
-    "PublicTest": {
-        "y": (N,)
-    },
-    "PrivateTest": {
-        "y": (N,)
-    }
-}
-"""
-def load_dataset_labels() -> dict:
-    input = {}
-
-    with open(f"{EMOTION_DIR_PATH}/fer2013new.csv") as new_fer_file:
-        for row in islice(csv.reader(new_fer_file), 1, None):
-            [
-                usage,
-                _,
-                neutral_vote_count,
-                happiness_vote_count,
-                surprise_vote_count,
-                sadness_vote_count,
-                anger_vote_count,
-                disgust_vote_count,
-                fear_vote_count,
-                contempt_vote_count,
-                unknown_vote_count,
-                nf_vote_count
-            ] = row
-
-            vote_counts = [
-                neutral_vote_count,
-                happiness_vote_count,
-                surprise_vote_count,
-                sadness_vote_count,
-                anger_vote_count,
-                disgust_vote_count,
-                fear_vote_count,
-                contempt_vote_count,
-                unknown_vote_count,
-                nf_vote_count
-            ]
-
-            if input.get(usage) and input[usage].get("y"):
-                input[usage]["y"].append(vote_counts.index(max(vote_counts)))
-
-            else:
-                input[usage] = {"y": [vote_counts.index(max(vote_counts))]}
-
-        input["Training"]["y"] = np.array(input["Training"]["y"])
-        input["PublicTest"]["y"] = np.array(input["PublicTest"]["y"])
-        input["PrivateTest"]["y"] = np.array(input["PrivateTest"]["y"])
-
-    return input
-
-
-def make_cnn(input_shape: tuple, output_shape: tuple) -> Sequential:
-    model = Sequential()
-
-    # Block-1
-    model.add(
-        Conv2D(
-            filters=64,
+        # Convolution block #1
+        tf.keras.layers.Conv2D(
+            filters=64, # Control the size of the convolution layer
+            activation="elu",
             kernel_size=3,
-            activation="elu",
             kernel_initializer="he_normal",
-            kernel_constraint=MinMaxNorm(min_value=0.0625, max_value=4, axis=[0, 1, 2, 3]),
-            input_shape=input_shape
-        )
-    )
-    model.add(BatchNormalization())
-    model.add(
-        Conv2D(
-            filters=64,
+            kernel_constraint=tf.keras.constraints.MinMaxNorm(min_value=0.0625, max_value=4, axis=[0, 1, 2, 3]),
+            bias_constraint=tf.keras.constraints.MinMaxNorm(min_value=0.0625, max_value=4),
+        ),
+        tf.keras.layers.BatchNormalization(),
+        tf.keras.layers.Conv2D(
+            filters=64, # Control the size of the convolution layer
+            activation="elu",
             kernel_size=3,
-            activation="elu",
             kernel_initializer="he_normal",
-            kernel_constraint=MinMaxNorm(min_value=0.0625, max_value=4, axis=[0, 1, 2, 3]),
-        )
-    )
-    model.add(BatchNormalization())
-    model.add(MaxPooling2D())
-    model.add(Dropout(0.5))
+            kernel_constraint=tf.keras.constraints.MinMaxNorm(min_value=0.0625, max_value=4, axis=[0, 1, 2, 3]),
+            bias_constraint=tf.keras.constraints.MinMaxNorm(min_value=0.0625, max_value=4),
+        ),
+        tf.keras.layers.BatchNormalization(),
+        tf.keras.layers.MaxPooling2D(),
+        tf.keras.layers.Dropout(0.2),
 
-    # Block-2
-    model.add(
-        Conv2D(
-            filters=128,
+        # Convolution block #2
+        tf.keras.layers.Conv2D(
+            filters=128, # Control the size of the convolution layer
+            activation="elu",
             kernel_size=3,
-            activation="elu",
             kernel_initializer="he_normal",
-            kernel_constraint=MinMaxNorm(min_value=0.0625, max_value=4, axis=[0, 1, 2, 3]),
-        )
-    )
-    model.add(BatchNormalization())
-    model.add(
-        Conv2D(
-            filters=128,
+            kernel_constraint=tf.keras.constraints.MinMaxNorm(min_value=0.0625, max_value=4, axis=[0, 1, 2, 3]),
+            bias_constraint=tf.keras.constraints.MinMaxNorm(min_value=0.0625, max_value=4),
+        ),
+        tf.keras.layers.BatchNormalization(),
+        tf.keras.layers.Conv2D(
+            filters=128, # Control the size of the convolution layer
+            activation="elu",
             kernel_size=3,
-            activation="elu",
             kernel_initializer="he_normal",
-            kernel_constraint=MinMaxNorm(min_value=0.0625, max_value=4, axis=[0, 1, 2, 3]),
-        )
-    )
-    model.add(BatchNormalization())
-    model.add(MaxPooling2D())
-    model.add(Dropout(0.5))
+            kernel_constraint=tf.keras.constraints.MinMaxNorm(min_value=0.0625, max_value=4, axis=[0, 1, 2, 3]),
+            bias_constraint=tf.keras.constraints.MinMaxNorm(min_value=0.0625, max_value=4),
+        ),
+        tf.keras.layers.BatchNormalization(),
+        tf.keras.layers.MaxPooling2D(),
+        tf.keras.layers.Dropout(0.2),
 
-    # Block-3
-    model.add(
-        Conv2D(
-            filters=256,
+        # Convolution block #3
+        tf.keras.layers.Conv2D(
+            filters=256, # Control the size of the convolution layer
+            activation="elu",
             kernel_size=3,
-            activation="elu",
             kernel_initializer="he_normal",
-            kernel_constraint=MinMaxNorm(min_value=0.0625, max_value=4, axis=[0, 1, 2, 3]),
-        )
-    )
-    model.add(BatchNormalization())
-    model.add(
-        Conv2D(
-            filters=256,
+            kernel_constraint=tf.keras.constraints.MinMaxNorm(min_value=0.0625, max_value=4, axis=[0, 1, 2, 3]),
+            bias_constraint=tf.keras.constraints.MinMaxNorm(min_value=0.0625, max_value=4),
+        ),
+        tf.keras.layers.BatchNormalization(),
+        tf.keras.layers.Conv2D(
+            filters=256, # Control the size of the convolution layer
+            activation="elu",
             kernel_size=3,
+            kernel_initializer="he_normal",
+            kernel_constraint=tf.keras.constraints.MinMaxNorm(min_value=0.0625, max_value=4, axis=[0, 1, 2, 3]),
+            bias_constraint=tf.keras.constraints.MinMaxNorm(min_value=0.0625, max_value=4),
+        ),
+        tf.keras.layers.BatchNormalization(),
+        tf.keras.layers.MaxPooling2D(),
+        tf.keras.layers.Dropout(0.2),
+
+        # Dense block #1
+        tf.keras.layers.Flatten(),
+        tf.keras.layers.Dense(
+            units=512, # Control the size of the convolution layer
             activation="elu",
             kernel_initializer="he_normal",
-            kernel_constraint=MinMaxNorm(min_value=0.0625, max_value=4, axis=[0, 1, 2, 3]),
-        )
-    )
-    model.add(BatchNormalization())
-    model.add(MaxPooling2D())
-    model.add(Dropout(0.5))
+            kernel_constraint=tf.keras.constraints.MinMaxNorm(min_value=0.0625, max_value=4, axis=[0, 1]),
+            bias_constraint=tf.keras.constraints.MinMaxNorm(min_value=0.0625, max_value=4),
+        ),
+        tf.keras.layers.BatchNormalization(),
+        tf.keras.layers.Dropout(0.5),
 
-    # Block-4
-    model.add(Flatten())
-    model.add(
-        Dense(
-            units=256,
+        # Dense block #2
+        tf.keras.layers.Dense(
+            units=256, # Control the size of the convolution layer
             activation="elu",
             kernel_initializer="he_normal",
-            kernel_constraint=MinMaxNorm(min_value=0.0625, max_value=4, axis=[0, 1]),
-        )
-    )
-    model.add(BatchNormalization())
-    model.add(Dropout(0.5))
+            kernel_constraint=tf.keras.constraints.MinMaxNorm(min_value=0.0625, max_value=4, axis=[0, 1]),
+            bias_constraint=tf.keras.constraints.MinMaxNorm(min_value=0.0625, max_value=4),
+        ),
+        tf.keras.layers.BatchNormalization(),
+        tf.keras.layers.Dropout(0.5),
 
-    # Block-5
-    model.add(
-        Dense(
-            units=128,
-            activation="elu",
-            kernel_initializer="he_normal",
-            kernel_constraint=MinMaxNorm(min_value=0.0625, max_value=4, axis=[0, 1]),
-        )
-    )
-    model.add(BatchNormalization())
-    model.add(Dropout(0.5))
-
-    # Block-6
-    model.add(
-        Dense(
+        # Dense block #3
+        tf.keras.layers.Dense(
             units=output_shape[0],
             activation="softmax",
             kernel_initializer="glorot_normal",
         )
+    ])
+
+    model.compile(
+        optimizer=tf.keras.optimizers.Adam(0.001 / 3),
+        loss="sparse_categorical_crossentropy",
+        metrics=["accuracy"]
     )
 
-    model.compile(optimizer="adam", loss="sparse_categorical_crossentropy", metrics=["accuracy"])
     model.summary()
-
     return model
 
 
