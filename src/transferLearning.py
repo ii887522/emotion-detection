@@ -64,16 +64,7 @@ to_epoch = ((last_epoch + 1) // TLConstants.TRAIN_EPOCH + 1) * TLConstants.TRAIN
 X = TLLoader.load_dataset(set(["Training", "PublicTest", "PrivateTest"]))
 
 ## training time
-new_model.fit(X["Training"]["x"],  X["Training"]["y"], epochs = to_epoch, validation_data=(X["PublicTest"]["x"], X["PublicTest"]["y"]),         class_weight=dict(
-        enumerate(
-            sklearn_utils.compute_class_weight(
-                class_weight="balanced",
-                classes=np.unique(X["Training"]["y"]),
-                y=X["Training"]["y"]
-            ),
-            0
-        )
-    ),
+new_model.fit(X["Training"]["x"],  X["Training"]["y"], epochs = to_epoch, validation_data=(X["PublicTest"]["x"], X["PublicTest"]["y"]),
             initial_epoch=last_epoch + 1, callbacks=[
             tf.keras.callbacks.ModelCheckpoint(
             filepath=TLConstants.BEST_TL_MODEL_DIR_PATH,
