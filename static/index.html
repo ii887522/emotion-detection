@@ -75,7 +75,7 @@
 
             <img
                 id="cam-overlay"
-                class="card-img-top position-absolute"
+                class="d-none card-img-top position-absolute"
                 style="object-fit: scale-down; max-height: 512px"
                 alt="Camera overlay"
                 src="images/empty.png"
@@ -124,6 +124,7 @@
             const socket = io()
             const camOverlay = document.getElementById("cam-overlay")
             let camOnButtonChecked = false
+            let currentAlg = "cnn"
 
             socket.on("overlay", data => camOverlay.setAttribute("src", data["data"]))
 
@@ -154,7 +155,7 @@
                         // POST /detect_emotions
                         const resp = await fetch(
                             "/detect_emotions",
-                            { method: "POST", body: JSON.stringify({ "data": e.target.result }) }
+                            { method: "POST", body: JSON.stringify({ "data": e.target.result, "alg": currentAlg }) }
                         )
                         const jsonResp = await resp.json()
                         inputImage.setAttribute("src", jsonResp.result)
@@ -199,7 +200,8 @@
 
             function startCam() {
                 if (navigator.mediaDevices.getUserMedia) {
-                    const inputCam = document.getElementById("input-cam");
+                    const inputCam = document.getElementById("input-cam")
+                    const camOverlay = document.getElementById("cam-overlay")
                     const canvas = document.createElement("canvas")
                     const ctx = canvas.getContext("2d")
                     let timer
@@ -210,7 +212,7 @@
 
                         timer = setInterval(() => {
                             ctx.drawImage(inputCam, 0, 0, canvas.width, canvas.height)
-                            socket.emit("frame", { data: canvas.toDataURL() })
+                            socket.emit("frame", { data: canvas.toDataURL(), alg: currentAlg })
                         }, 1000 / 2) // 2 FPS
                     }
 
@@ -220,6 +222,8 @@
                         try {
                             inputCam.srcObject = await navigator.mediaDevices.getUserMedia({ video: true })
                             inputCam.classList.remove("d-none")
+                            camOverlay.setAttribute("src", "images/empty.png")
+                            camOverlay.classList.remove("d-none")
                             document.getElementById("failed-load-image").classList.add("d-none")
                         } catch {
                             document.getElementById("input-cam").classList.add("d-none")
@@ -235,6 +239,7 @@
             }
 
             function stopCam() {
+                document.getElementById("cam-overlay").classList.add("d-none")
                 const inputCam = document.getElementById("input-cam")
 
                 if (inputCam.srcObject) {
@@ -253,13 +258,13 @@
                 camOnButtonChecked = false
             }
 
-            function navAlgoTo(algoType) {
+            function navAlgoTo(algo) {
                 const cnnTabItem = document.getElementById("cnn-tab-item")
                 const tlTabItem = document.getElementById("tl-tab-item")
                 cnnTabItem.classList.remove("active")
                 tlTabItem.classList.remove("active")
 
-                switch (algoType) {
+                switch (algo) {
                     case "cnn":
                         cnnTabItem.classList.add("active")
                         break
@@ -267,6 +272,8 @@
                     case "tl":
                         tlTabItem.classList.add("active")
                 }
+
+                currentAlg = algo
             }
         </script>
     </body>

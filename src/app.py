@@ -17,7 +17,8 @@ from flask_socketio import SocketIO, emit
 app = Flask(__name__, static_url_path="", static_folder="../static", template_folder="../static")
 socketio = SocketIO(app)
 face_classifier = cv2.CascadeClassifier(constants.HAARCASCADE_FRONTALFACE_DEFAULT_FILE_PATH)
-model: tf.keras.Sequential = tf.keras.models.load_model(constants.BEST_MODEL_DIR_PATH)
+cnn_model: tf.keras.Sequential = tf.keras.models.load_model(constants.BEST_MODEL_DIR_PATH)
+tl_model: tf.keras.Sequential = tf.keras.models.load_model(constants.BEST_TL_MODEL_DIR_PATH)
 
 
 @app.route("/")
@@ -30,6 +31,7 @@ def detect_emotions():
     # Input
     req = json.loads(request.data.decode("utf-8"))
     data = req["data"]
+    alg = req.get("alg", "cnn")
 
     # Convert data to image
     image = Image.open(BytesIO(base64.b64decode(data[data.index(",") + 1:])))
@@ -61,11 +63,16 @@ def detect_emotions():
         roi_gray = cv2.resize(roi_gray, constants.IMAGE_SIZE, interpolation=cv2.INTER_AREA)
 
         # model.predict() expects an array of images instead of 1 image
-        roi = np.expand_dims(roi_gray, (0, 3))
+        if alg == "cnn":
+            roi = np.expand_dims(roi_gray, (0, 3))
+
+        else:
+            roi = cv2.cvtColor(roi_gray, cv2.COLOR_GRAY2BGR)
+            roi = np.expand_dims(roi, 0)
 
         # Make a prediction on the region of interest, then lookup the class
         # [0] because model.predict() returns an array of predictions. We only need the first prediction
-        pred = model(roi, training=False).numpy()[0]
+        pred = (cnn_model if alg == "cnn" else tl_model)(roi, training=False).numpy()[0]
         print("Prediction: ", pred)
         label = constants.LABELS[pred.argmax()]
         print("Label: ", label)
@@ -91,6 +98,7 @@ def detect_emotions():
 def on_frame(req):
     # Input
     data = req["data"]
+    alg = req.get("alg", "cnn")
 
     # Convert data to image
     image = Image.open(BytesIO(base64.b64decode(data[data.index(",") + 1:])))
@@ -122,11 +130,16 @@ def on_frame(req):
         roi_gray = cv2.resize(roi_gray, constants.IMAGE_SIZE, interpolation=cv2.INTER_AREA)
 
         # model.predict() expects an array of images instead of 1 image
-        roi = np.expand_dims(roi_gray, (0, 3))
+        if alg == "cnn":
+            roi = np.expand_dims(roi_gray, (0, 3))
+
+        else:
+            roi = cv2.cvtColor(roi_gray, cv2.COLOR_GRAY2BGR)
+            roi = np.expand_dims(roi, 0)
 
         # Make a prediction on the region of interest, then lookup the class
         # [0] because model.predict() returns an array of predictions. We only need the first prediction
-        pred = model(roi, training=False).numpy()[0]
+        pred = (cnn_model if alg == "cnn" else tl_model)(roi, training=False).numpy()[0]
         print("Prediction: ", pred)
         label = constants.LABELS[pred.argmax()]
         print("Label: ", label)
@@ -151,6 +164,7 @@ def on_frame(req):
 if __name__ == '__main__':
     # Warm-up AI engine
     face_classifier.detectMultiScale(np.zeros((constants.IMAGE_SIZE[0], constants.IMAGE_SIZE[1]), dtype=np.uint8))
-    model(np.zeros((1, constants.IMAGE_SIZE[0], constants.IMAGE_SIZE[1], 1), dtype=np.uint8), training=False)
+    cnn_model(np.zeros((1, constants.IMAGE_SIZE[0], constants.IMAGE_SIZE[1], 1), dtype=np.uint8), training=False)
+    tl_model(np.zeros((1, constants.IMAGE_SIZE[0], constants.IMAGE_SIZE[1], 1), dtype=np.uint8), training=False)
 
     socketio.run(app)
