@@ -71,7 +71,7 @@ def load_dataset_pixels(usages: Set[str] = set(["Training", "PublicTest", "Priva
             if usage not in usages:
                 continue
 
-            # Reshape the pixels to fit CNN input layer
+            # Reshape, resize and convert color the pixels to fit mobilenetv2
             pixels = np.asarray(pixels.split(" "), np.uint8).reshape(TLConstants.IMAGE_SIZE[0], TLConstants.IMAGE_SIZE[1], 1)
             new_pixels = cv2.resize(pixels, (48,48))
             new_pixels = cv2.cvtColor(pixels, cv2.COLOR_GRAY2BGR)
