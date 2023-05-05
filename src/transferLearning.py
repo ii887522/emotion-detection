@@ -1,3 +1,5 @@
+# Author: Amos Teo Hua An
+
 import numpy as np
 import TLConstants
 import os
