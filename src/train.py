@@ -12,13 +12,14 @@ from itertools import islice
 
 
 def main():
-    # Load training and validation dataset
-    print("Loading training and validation dataset...")
-    dataset = loader.load_dataset(usages=set(["Training", "PublicTest"]))
-    x_train = dataset["Training"]["x"]
-    y_train = dataset["Training"]["y"]
-    x_val = dataset["PublicTest"]["x"]
-    y_val = dataset["PublicTest"]["y"]
+    # Load dataset
+    print("Loading dataset...")
+    dataset = loader.load_dataset()
+
+    x_train = np.concatenate((dataset["Training"]["x"], dataset["PublicTest"]["x"]))
+    y_train = np.concatenate((dataset["Training"]["y"], dataset["PublicTest"]["y"]))
+    x_val = dataset["PrivateTest"]["x"]
+    y_val = dataset["PrivateTest"]["y"]
 
     # Check the dataset shape
     print("x_train: ", x_train.shape)
